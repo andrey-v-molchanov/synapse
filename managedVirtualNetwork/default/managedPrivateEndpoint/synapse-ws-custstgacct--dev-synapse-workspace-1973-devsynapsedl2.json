@@ -1,0 +1,7 @@
+{
+	"name": "synapse-ws-custstgacct--dev-synapse-workspace-1973-devsynapsedl2",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/ee04e0d4-c40f-44eb-b085-5c1a090f2e87/resourceGroups/Delme/providers/Microsoft.Storage/storageAccounts/devsynapsedl2",
+		"groupId": "dfs"
+	}
+}

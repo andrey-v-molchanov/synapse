@@ -1,0 +1,10 @@
+{
+	"name": "synapse-ws-sqlOnDemand--dev-synapse-workspace-1973",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/ee04e0d4-c40f-44eb-b085-5c1a090f2e87/resourceGroups/Delme/providers/Microsoft.Synapse/workspaces/dev-synapse-workspace-1973",
+		"groupId": "sqlOnDemand",
+		"fqdns": [
+			"dev-synapse-workspace-1973-ondemand.2e0a0cac-3305-4d00-8be1-3f38846d58ff.sql.azuresynapse.net"
+		]
+	}
+}

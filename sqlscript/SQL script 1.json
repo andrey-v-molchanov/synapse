@@ -2,7 +2,7 @@
 	"name": "SQL script 1",
 	"properties": {
 		"content": {
-			"query": "// dev-1",
+			"query": "--- dev-1\nselect @@Version",
 			"metadata": {
 				"language": "sql"
 			},

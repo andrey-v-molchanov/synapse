@@ -1,0 +1,73 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Synapse deploy to TestQA
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "testqa" ]
+#   pull_request:
+#     branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+#       # Runs a single command using the runners shell
+#       - name: Run a one-line script
+#         run: echo Hello, world!
+
+#       # Runs a set of commands using the runners shell
+#       - name: Run a multi-line script
+#         run: |
+#           echo Add other actions to build,
+#           echo test, and deploy your project.
+
+      - name: Synapse workspace deployment
+        uses: Azure/Synapse-workspace-deployment@V1.7.0
+        with:
+            # Provide the Synapse workspace name where you want to deploy the artifacts.
+            TargetWorkspaceName: 'testqa-synapse-workspace-1973' 
+            # Specify the path to the workspace artifacts template.
+            TemplateFile: 'TemplateForWorkspace.json'
+            # Specify the path to the template parameter file.
+            ParametersFile: 'TemplateParametersForWorkspace.json'
+            # Specify deployment parameter values.
+            #OverrideArmParameters: # optional, default is 
+            Environment: 'Azure Public'
+            # Provide the resource group of the target Synapse workspace.
+            resourceGroup: 'Delme'
+            # Provide client id of service principal.
+            
+            ### Auth
+            clientId:       ${{secrets.CLIENT_ID}}
+            clientSecret:   ${{secrets.CLIENT_SECRET}}
+            subscriptionId: ${{secrets.SUBSCRIPTION_ID}}
+            tenantId:       ${{secrets.TENANT_ID}}
+            
+#             # Delete the artifacts which are in the workspace but not in the template.
+#             DeleteArtifactsNotInTemplate: # optional
+#             # Use managed identity to generate the bearer token?
+#             managedIdentity: # optional
+#             # Deploy managed private endpoints in the template.
+#             deployManagedPrivateEndpoint: # optional
+#             # Mark the pipeline as failed if ARM overrides are missing.
+#             FailOnMissingOverrides: # optional
+#             # Provide path to the root folder.
+#             ArtifactsFolder: # optional
+#             # Provide name of the operation.
+#             operation: 
+#             # Source for the npm package. Only for dev testing.
+#             npmpackage: # optional

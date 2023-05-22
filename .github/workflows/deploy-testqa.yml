@@ -41,9 +41,9 @@ jobs:
             # Provide the Synapse workspace name where you want to deploy the artifacts.
             TargetWorkspaceName: 'testqa-synapse-workspace-1973' 
             # Specify the path to the workspace artifacts template.
-            TemplateFile: 'TemplateForWorkspace.json'
+            TemplateFile: './TemplateForWorkspace.json'
             # Specify the path to the template parameter file.
-            ParametersFile: 'TemplateParametersForWorkspace.json'
+            ParametersFile: './TemplateParametersForWorkspace.json'
             # Specify deployment parameter values.
             #OverrideArmParameters: # optional, default is 
             Environment: 'Azure Public'
@@ -67,7 +67,7 @@ jobs:
 #             FailOnMissingOverrides: # optional
 #             # Provide path to the root folder.
 #             ArtifactsFolder: # optional
-#             # Provide name of the operation.
-#             operation: 
+            # Provide name of the operation.
+            operation: 'validateDeploy'
 #             # Source for the npm package. Only for dev testing.
 #             npmpackage: # optional

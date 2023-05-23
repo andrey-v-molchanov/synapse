@@ -6,7 +6,7 @@ name: Synapse deploy to TestQA
 on:
   # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "testqa" ]
+    branches: [ "publish_branch" ]
 #   pull_request:
 #     branches: [ "main" ]
 
@@ -41,9 +41,9 @@ jobs:
             # Provide the Synapse workspace name where you want to deploy the artifacts.
             TargetWorkspaceName: 'testqa-synapse-workspace-1973' 
             # Specify the path to the workspace artifacts template.
-            TemplateFile: './TemplateForWorkspace.json'
+            TemplateFile: './dev-synapse-workspace-1973/TemplateForWorkspace.json'
             # Specify the path to the template parameter file.
-            ParametersFile: './TemplateParametersForWorkspace.json'
+            ParametersFile: './dev-synapse-workspace-1973/TemplateParametersForWorkspace.json'
             # Specify deployment parameter values.
             #OverrideArmParameters: # optional, default is 
             Environment: 'Azure Public'

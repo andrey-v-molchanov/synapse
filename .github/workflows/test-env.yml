@@ -25,8 +25,14 @@ jobs:
 
       - name: Echo
         run: |
-          echo "echo: ${{ fromJSON('{"Development":"DEV","testqa":"TEST"}')[github.ref_name] }}"
-          echo "ref_name: ${{ github.ref_name }}"
+            echo "nc -vz sql-pcl-dev-weu-001.database.windows.net 1433"
+            nc -vz -w 5 sql-pcl-dev-weu-001.database.windows.net 1433
+            echo "nc -vz sql-pcl-testqa-weu-001.database.windows.net 1433"
+            nc -vz -w 5 sql-pcl-testqa-weu-001.database.windows.net 1433
+            echo "runner:${{ github.event.inputs.runner_name }}"
+            echo "branch:${{ github.ref_name }}"
+            echo "env:${{ fromJSON('{"Development":"DEV","testqa":"TEST"}')[github.ref_name] }}"
+            
           
           
 

@@ -10,18 +10,17 @@ on:
        - vmss-caas-gitrunner-weu-dev
        - vmss-caas-gitrunner-weu-testqa
 
-jobs:
-  build:
-    
-#     runs-on: ${{ github.event.inputs.runner_name }}
-#     environment: ${{ environment_name }}
-    
+  jobs:
+    build:
+      name: "dddd"
+      environment: ${{ environment_name }}
+   
     steps:
-    - uses: actions/checkout@v2
-        
-    - name: Echo 
-      run: |
-      echo "echo"
-      echo ${{ fromJSON('{"development":"DEV","testqa":"TEST"}')[github.ref_name] }}
+     - uses: actions/checkout@v2
+         
+     - name: Echo 
+       run: |
+         echo "echo"
+         echo ${{ fromJSON('{"development":"DEV","testqa":"TEST"}')[github.ref_name] }}
 
     

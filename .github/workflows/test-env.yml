@@ -27,5 +27,8 @@ jobs:
         run: |
           echo "echo"
           echo ${{ fromJSON('{"Development":"DEV","testqa":"TEST"}')[github.ref_name] }}
+          echo "ref_name"
+          echo ${{ github.ref_name }}
+          
 
     

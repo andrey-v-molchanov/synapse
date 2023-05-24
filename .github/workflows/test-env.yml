@@ -18,7 +18,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: ${{ environment_name }}
+    #environment: ${{ environment_name }}
 
     steps:
       - uses: actions/checkout@v3
@@ -26,6 +26,6 @@ jobs:
       - name: Echo
         run: |
           echo "echo"
-          echo ${{ fromJSON('{"development":"DEV","testqa":"TEST"}')[github.ref_name] }}
+          echo ${{ fromJSON('{"Development":"DEV","testqa":"TEST"}')[github.ref_name] }}
 
     

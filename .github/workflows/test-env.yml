@@ -32,6 +32,7 @@ jobs:
             echo "runner:${{ github.event.inputs.runner_name }}"
             echo "branch:${{ github.ref_name }}"
             echo "env:${{ fromJSON('{"Development":"DEV","testqa":"TEST"}')[github.ref_name] }}"
+        continue-on-error: true
             
           
           

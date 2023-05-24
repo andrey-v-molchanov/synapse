@@ -1,0 +1,31 @@
+name: test-env
+
+on:
+  push:
+    branches: [ "Development" ]
+  pull_request:
+    branches: [ "Development" ]
+
+  workflow_dispatch:
+    inputs:
+     runner_name:
+       type: choice
+       description: Select runners group
+       options: 
+       - vmss-caas-gitrunner-weu-dev
+       - vmss-caas-gitrunner-weu-testqa
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    #environment: ${{ environment_name }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Echo
+        run: |
+          echo "echo"
+          echo ${{ fromJSON('{"Development":"DEV","testqa":"TEST"}')[github.ref_name] }}
+
+    

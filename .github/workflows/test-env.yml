@@ -12,22 +12,16 @@ on:
 
 jobs:
   build:
-
+    
 #     runs-on: ${{ github.event.inputs.runner_name }}
 #     environment: ${{ environment_name }}
-    if: ${{ github.ref_name == 'development' }}
-        with:
-            environment_name: 'DEV'
-    if: ${{ github.ref_name == 'testqa' }}
-        with:
-            environment_name: 'TEST'
     
     steps:
     - uses: actions/checkout@v2
         
     - name: Echo 
       run: |
-      echo "echo!!!!"
-      echo ${{ environment_name }}
+      echo "echo"
+      echo ${{ fromJSON('{"development":"DEV","testqa":"TEST"}')[github.ref_name] }}
 
     

@@ -37,7 +37,7 @@ jobs:
 
       - name: Synapse workspace deployment
         #uses: Azure/Synapse-workspace-deployment@V1.7.0
-        uses: Azure/Synapse-workspace-deployment
+        uses: Azure/Synapse-workspace-deployment@V1.7.0
         with:
             # Provide the Synapse workspace name where you want to deploy the artifacts.
             TargetWorkspaceName: 'testqa-synapse-workspace-1973' 

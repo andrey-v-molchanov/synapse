@@ -1,10 +1,10 @@
 name: test-env
 
 on:
-  push:
-    branches: [ "Development" ]
-  pull_request:
-    branches: [ "Development" ]
+#   push:
+#     branches: [ "Development" ]
+#   pull_request:
+#     branches: [ "Development" ]
 
   workflow_dispatch:
     inputs:

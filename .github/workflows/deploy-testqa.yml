@@ -36,6 +36,7 @@ jobs:
 #           echo test, and deploy your project.
 
       - name: Synapse workspace deployment
+        #uses: Azure/Synapse-workspace-deployment@V1.7.0
         uses: Azure/Synapse-workspace-deployment@V1.7.0
         with:
             # Provide the Synapse workspace name where you want to deploy the artifacts.

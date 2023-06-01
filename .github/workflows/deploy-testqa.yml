@@ -58,11 +58,11 @@ jobs:
             tenantId:       ${{secrets.TENANT_ID}}
             
 #             # Delete the artifacts which are in the workspace but not in the template.
-#             DeleteArtifactsNotInTemplate: # optional
+            DeleteArtifactsNotInTemplate: 'true' # optional
 #             # Use managed identity to generate the bearer token?
-#             managedIdentity: # optional
+            managedIdentity: 'false' # optional
 #             # Deploy managed private endpoints in the template.
-#             deployManagedPrivateEndpoint: # optional
+            deployManagedPrivateEndpoint: 'false' # optional
 #             # Mark the pipeline as failed if ARM overrides are missing.
 #             FailOnMissingOverrides: # optional
 #             # Provide path to the root folder.

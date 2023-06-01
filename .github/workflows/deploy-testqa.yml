@@ -67,7 +67,7 @@ jobs:
 #             FailOnMissingOverrides: # optional
 #             # Provide path to the root folder.
 #             ArtifactsFolder: # optional
-            # Provide name of the operation.
-            operation: 'validateDeploy'
+            # Provide name of the operation. Deploy
+            operation: 'validate'
 #             # Source for the npm package. Only for dev testing.
 #             npmpackage: # optional

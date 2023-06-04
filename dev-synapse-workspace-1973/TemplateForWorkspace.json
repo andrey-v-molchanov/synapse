@@ -153,7 +153,31 @@
 				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
 			]
 		},
-?
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				},
+				"managedVirtualNetwork": {
+					"type": "ManagedVirtualNetworkReference",
+					"referenceName": "default"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/managedVirtualNetworks/default')]"
+			]
+		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/Dataflow1')]",
 			"type": "Microsoft.Synapse/workspaces/dataflows",
@@ -235,7 +259,7 @@
 			"properties": {
 				"description": "lalalala",
 				"content": {
-					"query": "select 1+1",
+					"query": "--- dev 2\nselect 1+1",
 					"metadata": {
 						"language": "sql"
 					},
@@ -803,7 +827,13 @@
 			},
 			"dependsOn": []
 		},
-		
+		{
+			"name": "[concat(parameters('workspaceName'), '/default')]",
+			"type": "Microsoft.Synapse/workspaces/managedVirtualNetworks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {},
+			"dependsOn": []
+		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/default/synapse-ws-custstgacct--dev-synapse-workspace-1973-devsynapsedl2')]",
 			"type": "Microsoft.Synapse/workspaces/managedVirtualNetworks/managedPrivateEndpoints",

@@ -12,10 +12,6 @@
 			"metadata": "Secure string for 'connectionString' of 'dev-synapse-workspace-1973-WorkspaceDefaultSqlServer'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:dev-synapse-workspace-1973.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
 		},
-		"bing-covid-19-data_sasUri": {
-			"type": "secureString",
-			"metadata": "Secure string for 'sasUri' of 'bing-covid-19-data'"
-		},
 		"dev-synapse-workspace-1973-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://devsynapsedl2.dfs.core.windows.net"
@@ -96,19 +92,6 @@
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/linkedServices/dev-synapse-workspace-1973-WorkspaceDefaultStorage')]"
 			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/bing-covid-19-data')]",
-			"type": "Microsoft.Synapse/workspaces/linkedServices",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"annotations": [],
-				"type": "AzureBlobStorage",
-				"typeProperties": {
-					"sasUri": "[parameters('bing-covid-19-data_sasUri')]"
-				}
-			},
-			"dependsOn": []
 		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/dev-synapse-workspace-1973-WorkspaceDefaultSqlServer')]",

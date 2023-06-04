@@ -52,7 +52,7 @@ jobs:
 #             # Mark the pipeline as failed if ARM overrides are missing.
             FailOnMissingOverrides: 'false' # optional
 #             # Provide path to the root folder.
-            ArtifactsFolder: 'validate' # optional
+            ArtifactsFolder: '.' # optional
             # Provide name of the operation. Deploy
             operation: 'validate'
 #             # Source for the npm package. Only for dev testing.

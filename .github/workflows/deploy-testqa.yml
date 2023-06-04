@@ -64,7 +64,7 @@ jobs:
 #             # Deploy managed private endpoints in the template.
             deployManagedPrivateEndpoint: 'false' # optional
 #             # Mark the pipeline as failed if ARM overrides are missing.
-#             FailOnMissingOverrides: # optional
+            FailOnMissingOverrides: 'false' # optional
 #             # Provide path to the root folder.
 #             ArtifactsFolder: # optional
             # Provide name of the operation. Deploy

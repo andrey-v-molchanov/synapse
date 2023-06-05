@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: Azure/synapse-workspace-deployment@latest
+      - uses: Azure/synapse-workspace-deployment@V1.7.0
         with:
             TargetWorkspaceName: 'targetworkspace'
             ArtifactsFolder: './RootFolder'

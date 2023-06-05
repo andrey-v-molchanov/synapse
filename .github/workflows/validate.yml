@@ -25,7 +25,7 @@ jobs:
         uses: Azure/Synapse-workspace-deployment@V1.7.0
         with:
             # Provide the Synapse workspace name where you want to deploy the artifacts.
-            TargetWorkspaceName: 'dev-synapse-workspace-1973' 
+            TargetWorkspaceName: 'testqq-synapse-workspace-1973' 
             # Specify the path to the workspace artifacts template.
             #TemplateFile: './dev-synapse-workspace-1973/TemplateForWorkspace.json'
             # Specify the path to the template parameter file.

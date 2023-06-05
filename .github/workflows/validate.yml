@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Synapse VALIDATE to TestQA
+name: Synapse VALIDATE
 
 # Controls when the workflow will run
 on:
@@ -52,7 +52,7 @@ jobs:
 #             # Mark the pipeline as failed if ARM overrides are missing.
             FailOnMissingOverrides: 'false' # optional
 #             # Provide path to the root folder.
-            ArtifactsFolder: '.' # optional
+            ArtifactsFolder: './' # optional
             # Provide name of the operation. Deploy
             operation: 'validate'
 #             # Source for the npm package. Only for dev testing.

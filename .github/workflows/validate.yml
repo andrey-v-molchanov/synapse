@@ -23,8 +23,8 @@ jobs:
 
       - uses: Azure/synapse-workspace-deployment@V1.7.0
         with:
-            TargetWorkspaceName: 'targetworkspace'
-            ArtifactsFolder: './RootFolder'
+            TargetWorkspaceName: 'dev-synapse-workspace-1973'
+            ArtifactsFolder: './'
             operation: 'validate'
            
       - uses: actions/upload-artifact@v3

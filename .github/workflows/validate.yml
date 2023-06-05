@@ -21,11 +21,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: Azure/synapse-workspace-deployment
+      - uses: Azure/synapse-workspace-deployment@V1.70
         with:
-          TargetWorkspaceName: 'targetworkspace'
-          ArtifactsFolder: './RootFolder'
-          operation: 'validate'
+            TargetWorkspaceName: 'targetworkspace'
+            ArtifactsFolder: './RootFolder'
+            operation: 'validate'
+           
+      - uses: actions/upload-artifact@v3
+        with:
+           name: my-artifact
+           path: ./ExportedArtifacts
           
 #       - name: Synapse workspace VALIDATE
 #         uses: Azure/Synapse-workspace-deployment@V1.7.0

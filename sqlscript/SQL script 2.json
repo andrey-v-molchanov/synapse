@@ -3,7 +3,7 @@
 	"properties": {
 		"description": "lalalala",
 		"content": {
-			"query": "select 1+1",
+			"query": "--- dev 2\nselect 1+1",
 			"metadata": {
 				"language": "sql"
 			},

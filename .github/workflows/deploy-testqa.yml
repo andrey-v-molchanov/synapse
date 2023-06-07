@@ -70,6 +70,6 @@ jobs:
 #             ArtifactsFolder: # optional
             # Provide name of the operation.
             #operation: 'validateDeploy'
-            operation: 'validate'
+            operation: 'deploy'
 #             # Source for the npm package. Only for dev testing.
 #             npmpackage: # optional

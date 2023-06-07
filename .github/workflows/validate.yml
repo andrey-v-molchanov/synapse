@@ -2,6 +2,7 @@
 
 name: Synapse VALIDATE
 
+
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the "main" branch
@@ -66,5 +67,6 @@ jobs:
 #             ArtifactsFolder: './' # optional
 #             # Provide name of the operation. Deploy
 #             operation: 'validate'
+
 #             # Source for the npm package. Only for dev testing.
 #             npmpackage: # optional

@@ -1,6 +1,7 @@
 {
 	"name": "Pipeline 1",
 	"properties": {
+		"description": "Description !!",
 		"activities": [
 			{
 				"name": "Data flow1",
@@ -27,6 +28,14 @@
 				}
 			}
 		],
-		"annotations": []
+		"variables": {
+			"sssss": {
+				"type": "String",
+				"defaultValue": "ssssss"
+			}
+		},
+		"annotations": [
+			"ddddddd"
+		]
 	}
 }

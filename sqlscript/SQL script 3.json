@@ -2,7 +2,7 @@
 	"name": "SQL script 3",
 	"properties": {
 		"content": {
-			"query": "--- v3",
+			"query": "--- v3\n--- verify custom comments",
 			"metadata": {
 				"language": "sql"
 			},

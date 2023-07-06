@@ -3,7 +3,7 @@
 	"properties": {
 		"description": "Strange looking file",
 		"content": {
-			"query": "--- script N4",
+			"query": "--- script N4\nselect @@Version",
 			"metadata": {
 				"language": "sql"
 			},

@@ -1,0 +1,161 @@
+{
+	"name": "DIM_QTR_MNEMONIC_OFFSET_UPDATER",
+	"properties": {
+		"folder": {
+			"name": "Time"
+		},
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "synspisips001",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "e15a1a7a-713a-4100-96ca-3ec94969291b"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/0482d4e6-19e6-4955-8af3-3eb7a14379ac/resourceGroups/rg-cdo-ooo-dev-weu-001/providers/Microsoft.Synapse/workspaces/syn-ooo-isip-dev-weu-001/bigDataPools/synspisips001",
+				"name": "synspisips001",
+				"type": "Spark",
+				"endpoint": "https://syn-ooo-isip-dev-weu-001.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/synspisips001",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"%run utils/utils-adls-credentials"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"%run utils/utils-setup-logger"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"# is_first_MMW = True"
+				],
+				"execution_count": 42
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"#Update TIME.DIM_QTR_MNEMONIC_OFFSET table.\r\n",
+					"\r\n",
+					"# Column_Name\t            Update Frequency\r\n",
+					"# DAILY_QTR_MNEMONIC_OFFSET\tFirst day of every quarter \r\n",
+					"# QTR_MNEMONIC_OFFSET\t    First MMW of every quarter\r\n",
+					"# CURR_QTR_INDC\t            First MMW of every quarter\r\n",
+					"\r\n",
+					"if is_first_MMW is None:\r\n",
+					"    logger.error(\"is_first_MMW is mandatory input parameter\")\r\n",
+					"    mssparkutils.notebook.exit(\"is_first_MMW is mandatory input parameter\")\r\n",
+					"\r\n",
+					"else:        \r\n",
+					"    if is_first_MMW:\r\n",
+					"        #update QTR_MNEMONIC_OFFSET and CURR_QTR_INDC\r\n",
+					"        df_DIM_QTR_MNEMONIC_OFFSET = spark.sql(\"\"\"\r\n",
+					"            select distinct\r\n",
+					"            YEAR_QTR_SEQ_WED AS YEAR_QTR_SEQ_WED,\r\n",
+					"            YEAR_QTR_SEQ as YEAR_QTR_SEQ,\r\n",
+					"            DAILY_QTR_MNEMONIC_OFFSET AS DAILY_QTR_MNEMONIC_OFFSET,\r\n",
+					"            cast((QTR_MNEMONIC_OFFSET -1) AS SMALLINT) AS QTR_MNEMONIC_OFFSET,\r\n",
+					"            CURR_QTR_INDC AS CURR_QTR_INDC,\r\n",
+					"            IW_ROW_UPDT_TS AS IW_ROW_UPDT_TS from time.DIM_QTR_MNEMONIC_OFFSET T\r\n",
+					"        \"\"\")\r\n",
+					"        df_DIM_QTR_MNEMONIC_OFFSET = df_DIM_QTR_MNEMONIC_OFFSET.withColumn('CURR_QTR_INDC', lit('N'))\r\n",
+					"        df_DIM_QTR_MNEMONIC_OFFSET = df_DIM_QTR_MNEMONIC_OFFSET.withColumn(\"CURR_QTR_INDC\", when(df_DIM_QTR_MNEMONIC_OFFSET.QTR_MNEMONIC_OFFSET == 0, 'Y').otherwise('N'))\r\n",
+					"        logger.info(\"Writing data into TIME.DIM_QTR_MNEMONIC_OFFSET table\")\r\n",
+					"        df_DIM_QTR_MNEMONIC_OFFSET.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
+					"        logger.info(\"Load Completed: time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
+					"    else:\r\n",
+					"        #update DAILY_QTR_MNEMONIC_OFFSET\r\n",
+					"        df_DIM_QTR_MNEMONIC_OFFSET = spark.sql(\"\"\"\r\n",
+					"            select distinct\r\n",
+					"            YEAR_QTR_SEQ_WED AS YEAR_QTR_SEQ_WED,\r\n",
+					"            YEAR_QTR_SEQ as YEAR_QTR_SEQ,\r\n",
+					"            cast((DAILY_QTR_MNEMONIC_OFFSET -1) AS SMALLINT) AS DAILY_QTR_MNEMONIC_OFFSET,\r\n",
+					"            QTR_MNEMONIC_OFFSET AS QTR_MNEMONIC_OFFSET,\r\n",
+					"            CURR_QTR_INDC AS CURR_QTR_INDC,\r\n",
+					"            IW_ROW_UPDT_TS AS IW_ROW_UPDT_TS from time.DIM_QTR_MNEMONIC_OFFSET T\r\n",
+					"        \"\"\")\r\n",
+					"        logger.info(\"Writing data into TIME.DIM_QTR_MNEMONIC_OFFSET table\")\r\n",
+					"        df_DIM_QTR_MNEMONIC_OFFSET.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
+					"        logger.info(\"Load Completed: time.DIM_QTR_MNEMONIC_OFFSET\")"
+				],
+				"execution_count": 65
+			}
+		]
+	}
+}

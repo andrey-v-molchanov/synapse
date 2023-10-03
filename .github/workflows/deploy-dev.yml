@@ -45,8 +45,11 @@ jobs:
       - name: 'Mess with code - 2'
         run: |
              for file in ./notebook/*; do
-                  jq -r '.properties| del(.bigDataPool)' $file > "${file%%.*}".ipynb
+                  echo jq -r '.properties| del(.bigDataPool)' ./notebook/$file > ./notebook/${file%%.*}.ipynb
+                  jq -r '.properties| del(.bigDataPool)' ./notebook/$file > ./notebook/{file%%.*}.ipynb
+                  echo folder=$(jq '.properties.folder.name' $file)
                   folder=$(jq '.properties.folder.name' $file)
+                  echo ${folder}
                   #az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file%%.*} --file @"${file%%.*}".ipynb               
              done            
 

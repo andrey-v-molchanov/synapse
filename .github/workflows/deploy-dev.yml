@@ -49,7 +49,7 @@ jobs:
                   #jq -r '.properties| del(.bigDataPool)' $file > "${file%%.*}".ipynb
                   #folder=$(jq '.properties.folder.name' $file)
                   #jq '.properties.folder.name' $file
-                  echo "-->"
+                  echo "--> ${file}"
                   #az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file%%.*} --file @"${file%%.*}".ipynb               
              done            
 

@@ -51,6 +51,7 @@ jobs:
                   folder=$(jq '.properties.folder.name' $file)
                   echo ${folder}
                   #az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file%%.*} --file @"${file%%.*}".ipynb               
+                  az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file}.ipynb --file @"${file}".ipynb               
              done            
 
              echo ls -ls ${{ github.workspace }}/notebook

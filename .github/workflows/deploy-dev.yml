@@ -44,14 +44,14 @@ jobs:
 
       - name: 'Mess with code - 2'
         run: |
-          mapfile -t dirs < ./custom_deploy_folders.txt
-          # for dir in $(find * -type d); do          
-          #     for file in ./"$dir"/*; do
-          #         jq -r '.properties| del(.bigDataPool)' $file > "${file%%.*}".ipynb
-          #         folder=$(jq '.properties.folder.name' $file)
-          #         #az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file%%.*} --file @"${file%%.*}".ipynb               
-          #     done            
-          # done
+             mapfile -t dirs < ./custom_deploy_folders.txt
+             for file in ./"$dir"/*; do
+                  #jq -r '.properties| del(.bigDataPool)' $file > "${file%%.*}".ipynb
+                  #folder=$(jq '.properties.folder.name' $file)
+                  jq '.properties.folder.name' $file
+                  #az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file%%.*} --file @"${file%%.*}".ipynb               
+             done            
+
 
           echo ls -ls ${{ github.workspace }}/notebook
           ls -ls ${{ github.workspace }}/notebook

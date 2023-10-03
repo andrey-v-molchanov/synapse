@@ -13,4 +13,8 @@ jobs:
       - name: 'Login to Azure for operation with Synapse Workspace'
         run: |
              az login --service-principal -u ${{ secrets.CLIENT_ID }} -p ${{ secrets.CLIENT_SECRET }} --tenant 5edd836b-8139-4f28-802b-b5fb9422bf6e --allow-no-subscriptions
+
+      - name: 'Mess with code'
+        run: |
+             az synapse notebook list --workspace-name dev-synapse-workspace-1973
              

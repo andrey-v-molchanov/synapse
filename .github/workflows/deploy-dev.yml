@@ -17,8 +17,8 @@ jobs:
       - name: 'Mess with code'
         run: |
              az synapse notebook list --workspace-name dev-synapse-workspace-1973 -o table
-             echo ls -ls ${{ inputs.workspace }}/notebook
-             ls -ls ${{ inputs.workspace }}/notebook
+             echo ls -ls ${{ github.workspace }}/notebook
+             ls -ls ${{ github.workspace }}/notebook
              
       - name: Remove artefacts
         if: ${{ inputs.dir_based_deploy != 'false' }}
@@ -39,8 +39,8 @@ jobs:
               done
           done
           
-          echo ls -ls ${{ inputs.workspace }}/notebook
-          ls -ls ${{ inputs.workspace }}/notebook
+          echo ls -ls ${{ github.workspace }}/notebook
+          ls -ls ${{ github.workspace }}/notebook
 
       - name: 'Mess with code - 2'
         run: |
@@ -53,8 +53,8 @@ jobs:
               done            
           done
 
-          echo ls -ls ${{ inputs.workspace }}/notebook
-          ls -ls ${{ inputs.workspace }}/notebook
+          echo ls -ls ${{ github.workspace }}/notebook
+          ls -ls ${{ github.workspace }}/notebook
              
           
 

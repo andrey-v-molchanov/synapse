@@ -52,9 +52,8 @@ jobs:
                   #az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file%%.*} --file @"${file%%.*}".ipynb               
              done            
 
-
-          echo ls -ls ${{ github.workspace }}/notebook
-          ls -ls ${{ github.workspace }}/notebook
+             echo ls -ls ${{ github.workspace }}/notebook
+             ls -ls ${{ github.workspace }}/notebook
              
           
 

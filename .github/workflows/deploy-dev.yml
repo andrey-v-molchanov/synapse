@@ -1,0 +1,16 @@
+name: Synapse deploy to DEV
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:    
+      - uses: actions/checkout@v3
+
+      - name: 'Login to Azure for operation with Synapse Workspace'
+        run: |
+             az login --service-principal -u ${{ secrets.CLIENT_ID } -p ${{ secrets.CLIENT_SECRET }} --tenant 5edd836b-8139-4f28-802b-b5fb9422bf6e --allow-no-subscriptions
+             

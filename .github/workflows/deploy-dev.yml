@@ -1,0 +1,63 @@
+name: Synapse deploy to DEV
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:    
+      - uses: actions/checkout@v3
+
+      - name: 'Login to Azure for operation with Synapse Workspace'
+        run: |
+             az login --service-principal -u ${{ secrets.CLIENT_ID }} -p ${{ secrets.CLIENT_SECRET }} --tenant 5edd836b-8139-4f28-802b-b5fb9422bf6e --allow-no-subscriptions
+
+      - name: 'Mess with code'
+        run: |
+             az synapse notebook list --workspace-name dev-synapse-workspace-1973 -o table
+             echo ls -ls ${{ github.workspace }}/notebook
+             ls -ls ${{ github.workspace }}/notebook
+             
+      - name: Remove artefacts
+        if: ${{ inputs.dir_based_deploy != 'false' }}
+        shell: bash
+        run: |
+          mapfile -t dirs < ./custom_deploy_folders.txt
+          for dir in $(find * -type d); do
+              for file in ./"$dir"/*; do
+                  if [[ -f "$file" && $(cat "$file" | jq -r '.properties.folder' | jq 'has("name")') == 'true' ]]; then
+                      folder=$(cat "$file" | jq -r '.properties.folder.name')
+                      if [[ "${dirs[@]}" =~ "${folder%%/*}" ]]; then
+                          echo "Keeping $file"
+                      else
+                          echo "Removing $file"
+                          rm "$file"
+                      fi
+                  fi
+              done
+          done
+          
+          echo ls -ls ${{ github.workspace }}/notebook
+          ls -ls ${{ github.workspace }}/notebook
+
+      - name: 'Mess with code - 2'
+        run: |
+             for file in ./notebook/*; do
+                  #echo jq -r '.properties| del(.bigDataPool)' $file into "${file%%.*}".ipynb
+                  echo jq -r '.properties| del(.bigDataPool)' $file into ${file}.ipynb
+                  jq -r '.properties| del(.bigDataPool)' $file > ${file}.ipynb
+                  folder=$(jq '.properties.folder.name' $file)
+                  echo ${folder}
+                  echo az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file%%.*} --file @"${file%%.*}".ipynb               
+                  echo az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file} --file @"${file}".ipynb
+                  az synapse notebook create --workspace-name dev-synapse-workspace-1973 --folder-path ${folder} --name ${file} --file @"${file}".ipynb               
+             done            
+
+             echo ls -ls ${{ github.workspace }}/notebook
+             ls -ls ${{ github.workspace }}/notebook
+             
+          
+
+             

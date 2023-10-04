@@ -25,7 +25,7 @@ jobs:
       - uses: Azure/synapse-workspace-deployment@V1.7.0
         with:
             TargetWorkspaceName: 'dev-synapse-workspace-1973'
-            ArtifactsFolder: './'
+            ArtifactsFolder: ${{ github.workspace }}
             operation: 'validate'
            
       - uses: actions/upload-artifact@v3

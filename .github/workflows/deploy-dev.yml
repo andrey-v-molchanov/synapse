@@ -1,4 +1,4 @@
-name: Synapse deploy to DEV
+name: Synapse deploy to DEV2
 
 on:
   workflow_dispatch:

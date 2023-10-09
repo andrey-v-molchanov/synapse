@@ -46,7 +46,7 @@ jobs:
         run: |
              cd ./notebook/
              for file in *.json; do
-                  echo jq -r \'.properties| del(.bigDataPool)\' $file into "${file%%.*}".ipynb
+                  echo jq -r '.properties| del(.bigDataPool)' $file into "${file%%.*}".ipynb
                   jq -r '.properties| del(.bigDataPool)' $file > "${file%%.*}".ipynb
                   folder=$(jq '.properties.folder.name' $file)
                   echo ${folder}

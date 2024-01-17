@@ -6,49 +6,22 @@
 		},
 		"nbformat": 4,
 		"nbformat_minor": 2,
-		"bigDataPool": {
-			"referenceName": "synspisips001",
-			"type": "BigDataPoolReference"
-		},
 		"sessionProperties": {
 			"driverMemory": "28g",
 			"driverCores": 4,
 			"executorMemory": "28g",
 			"executorCores": 4,
 			"numExecutors": 2,
-			"conf": {
-				"spark.dynamicAllocation.enabled": "false",
-				"spark.dynamicAllocation.minExecutors": "2",
-				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "24e84a26-59bb-41c5-be5c-2fd398ba2697"
-			}
+			"runAsWorkspaceSystemIdentity": false
 		},
 		"metadata": {
-			"saveOutput": true,
-			"enableDebugMode": false,
 			"kernelspec": {
 				"name": "synapse_pyspark",
 				"display_name": "Synapse PySpark"
 			},
 			"language_info": {
 				"name": "python"
-			},
-			"a365ComputeOptions": {
-				"id": "/subscriptions/0482d4e6-19e6-4955-8af3-3eb7a14379ac/resourceGroups/rg-cdo-ooo-dev-weu-001/providers/Microsoft.Synapse/workspaces/syn-ooo-isip-dev-weu-001/bigDataPools/synspisips001",
-				"name": "synspisips001",
-				"type": "Spark",
-				"endpoint": "https://syn-ooo-isip-dev-weu-001.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/synspisips001",
-				"auth": {
-					"type": "AAD",
-					"authResource": "https://dev.azuresynapse.net"
-				},
-				"sparkVersion": "3.3",
-				"nodeCount": 10,
-				"cores": 4,
-				"memory": 28,
-				"automaticScaleJobs": false
-			},
-			"sessionKeepAliveTimeout": 30
+			}
 		},
 		"cells": [
 			{
@@ -67,8 +40,7 @@
 				"source": [
 					"#This notebook is to create REF_DAY_TIME.del file from REF_DAY_TIME_ESA.csv and load the del file into time.REF_DAY_TIME table.\r\n",
 					"#Use time.REF_DAY_TIME table to populate other time dimension tables."
-				],
-				"execution_count": 30
+				]
 			},
 			{
 				"cell_type": "code",
@@ -85,8 +57,7 @@
 				},
 				"source": [
 					"%run utils/utils-adls-credentials"
-				],
-				"execution_count": 31
+				]
 			},
 			{
 				"cell_type": "code",
@@ -103,8 +74,7 @@
 				},
 				"source": [
 					"%run utils/utils-setup-logger"
-				],
-				"execution_count": 32
+				]
 			},
 			{
 				"cell_type": "code",
@@ -272,8 +242,7 @@
 					"    main()\r\n",
 					"\r\n",
 					""
-				],
-				"execution_count": 16
+				]
 			},
 			{
 				"cell_type": "code",
@@ -501,8 +470,7 @@
 					"\r\n",
 					"\r\n",
 					""
-				],
-				"execution_count": 34
+				]
 			}
 		]
 	}

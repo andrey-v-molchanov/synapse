@@ -6,57 +6,29 @@
 		},
 		"nbformat": 4,
 		"nbformat_minor": 2,
-		"bigDataPool": {
-			"referenceName": "synspisips001",
-			"type": "BigDataPoolReference"
-		},
 		"sessionProperties": {
 			"driverMemory": "28g",
 			"driverCores": 4,
 			"executorMemory": "28g",
 			"executorCores": 4,
 			"numExecutors": 2,
-			"conf": {
-				"spark.dynamicAllocation.enabled": "false",
-				"spark.dynamicAllocation.minExecutors": "2",
-				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "e15a1a7a-713a-4100-96ca-3ec94969291b"
-			}
+			"runAsWorkspaceSystemIdentity": false
 		},
 		"metadata": {
-			"saveOutput": true,
-			"enableDebugMode": false,
 			"kernelspec": {
 				"name": "synapse_pyspark",
 				"display_name": "Synapse PySpark"
 			},
 			"language_info": {
 				"name": "python"
-			},
-			"a365ComputeOptions": {
-				"id": "/subscriptions/0482d4e6-19e6-4955-8af3-3eb7a14379ac/resourceGroups/rg-cdo-ooo-dev-weu-001/providers/Microsoft.Synapse/workspaces/syn-ooo-isip-dev-weu-001/bigDataPools/synspisips001",
-				"name": "synspisips001",
-				"type": "Spark",
-				"endpoint": "https://syn-ooo-isip-dev-weu-001.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/synspisips001",
-				"auth": {
-					"type": "AAD",
-					"authResource": "https://dev.azuresynapse.net"
-				},
-				"sparkVersion": "3.3",
-				"nodeCount": 10,
-				"cores": 4,
-				"memory": 28,
-				"automaticScaleJobs": false
-			},
-			"sessionKeepAliveTimeout": 30
+			}
 		},
 		"cells": [
 			{
 				"cell_type": "code",
 				"source": [
 					"%run utils/utils-adls-credentials"
-				],
-				"execution_count": null
+				]
 			},
 			{
 				"cell_type": "code",
@@ -73,8 +45,7 @@
 				},
 				"source": [
 					"%run utils/utils-setup-logger"
-				],
-				"execution_count": null
+				]
 			},
 			{
 				"cell_type": "code",
@@ -94,8 +65,7 @@
 				},
 				"source": [
 					"# is_first_MMW = True"
-				],
-				"execution_count": 42
+				]
 			},
 			{
 				"cell_type": "code",
@@ -153,8 +123,7 @@
 					"        logger.info(\"Writing data into TIME.DIM_QTR_MNEMONIC_OFFSET table\")\r\n",
 					"        df_DIM_QTR_MNEMONIC_OFFSET.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
 					"        logger.info(\"Load Completed: time.DIM_QTR_MNEMONIC_OFFSET\")"
-				],
-				"execution_count": 65
+				]
 			}
 		]
 	}

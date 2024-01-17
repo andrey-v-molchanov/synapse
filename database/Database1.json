@@ -17,7 +17,10 @@
 				"FormatType": "csv",
 				"LinkedServiceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage"
 			}
-		}
+		},
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "1bca3f74-b72d-4fd3-8678-a7751ae26b85"
 	},
 	"type": "DATABASE"
 }

@@ -1,0 +1,42 @@
+{
+	"name": "JSON_2_DB",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "synapses_dev",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sink1"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          Id as string,",
+				"          Name as string,",
+				"          RG as string,",
+				"          Tags as (ApplicationId as string, ProjectName as string, Application_Management_Group as string, DataRetention as string, DeployDate as string, Support_Group as string, Environment as string, ProjectOwner as string, TicketNo as string, VM as string, DeployBy as string)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine') ~> source1",
+				"source1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'synapse_db',",
+				"     tableName: 'synapses') ~> sink1"
+			]
+		}
+	}
+}

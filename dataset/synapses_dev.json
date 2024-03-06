@@ -1,0 +1,70 @@
+{
+	"name": "synapses_dev",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "DataLake_DEV_LS",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "Synapse.dev.json",
+				"fileSystem": "dev-synapse-fs"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"Id": {
+					"type": "string"
+				},
+				"Name": {
+					"type": "string"
+				},
+				"RG": {
+					"type": "string"
+				},
+				"Tags": {
+					"type": "object",
+					"properties": {
+						"ApplicationId": {
+							"type": "string"
+						},
+						"ProjectName": {
+							"type": "string"
+						},
+						"Application_Management_Group": {
+							"type": "string"
+						},
+						"DataRetention": {
+							"type": "string"
+						},
+						"DeployDate": {
+							"type": "string"
+						},
+						"Support_Group": {
+							"type": "string"
+						},
+						"Environment": {
+							"type": "string"
+						},
+						"ProjectOwner": {
+							"type": "string"
+						},
+						"TicketNo": {
+							"type": "string"
+						},
+						"VM": {
+							"type": "string"
+						},
+						"DeployBy": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	}
+}

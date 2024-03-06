@@ -8,8 +8,14 @@
 		"AzureSqlDatabase1_connectionString": {
 			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=dev-synapse-workspace-1973.database.windows.net;Initial Catalog=master"
 		},
+		"Test_data_lake_accountKey": {
+			"value": ""
+		},
 		"dev-synapse-workspace-1973-WorkspaceDefaultSqlServer_connectionString": {
 			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:dev-synapse-workspace-1973.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"Test_data_lake_properties_typeProperties_url": {
+			"value": "https://testqasynapsedl2.dfs.core.windows.net/"
 		},
 		"dev-synapse-workspace-1973-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"value": "https://devsynapsedl2.dfs.core.windows.net"

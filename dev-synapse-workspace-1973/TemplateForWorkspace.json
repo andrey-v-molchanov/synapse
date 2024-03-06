@@ -12,10 +12,18 @@
 			"metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase1'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=dev-synapse-workspace-1973.database.windows.net;Initial Catalog=master"
 		},
+		"Test_data_lake_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'Test_data_lake'"
+		},
 		"dev-synapse-workspace-1973-WorkspaceDefaultSqlServer_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'dev-synapse-workspace-1973-WorkspaceDefaultSqlServer'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:dev-synapse-workspace-1973.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"Test_data_lake_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://testqasynapsedl2.dfs.core.windows.net/"
 		},
 		"dev-synapse-workspace-1973-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"type": "string",
@@ -65,8 +73,7 @@
 					}
 				],
 				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
+					"elapsedTimeMetric": {}
 				},
 				"variables": {
 					"sssss": {
@@ -76,7 +83,8 @@
 				},
 				"annotations": [
 					"ddddddd"
-				]
+				],
+				"lastPublishTime": "2023-07-06T12:49:22Z"
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/dataflows/Dataflow1')]"
@@ -116,6 +124,29 @@
 				"type": "AzureSqlDatabase",
 				"typeProperties": {
 					"connectionString": "[parameters('AzureSqlDatabase1_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Test_data_lake')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('Test_data_lake_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('Test_data_lake_accountKey')]"
+					}
 				},
 				"connectVia": {
 					"referenceName": "AutoResolveIntegrationRuntime",
@@ -249,6 +280,13 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/default')]",
+			"type": "Microsoft.Synapse/workspaces/managedVirtualNetworks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/SQL script 1')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -331,6 +369,747 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/DIM_QTR_MNEMONIC_OFFSET_UPDATER')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Time"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {}
+				},
+				"metadata": {
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					}
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"%run utils/utils-adls-credentials"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"%run utils/utils-setup-logger"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"tags": [
+								"parameters"
+							]
+						},
+						"source": [
+							"# is_first_MMW = True"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"#Update TIME.DIM_QTR_MNEMONIC_OFFSET table.\r\n",
+							"\r\n",
+							"# Column_Name\t            Update Frequency\r\n",
+							"# DAILY_QTR_MNEMONIC_OFFSET\tFirst day of every quarter \r\n",
+							"# QTR_MNEMONIC_OFFSET\t    First MMW of every quarter\r\n",
+							"# CURR_QTR_INDC\t            First MMW of every quarter\r\n",
+							"\r\n",
+							"if is_first_MMW is None:\r\n",
+							"    logger.error(\"is_first_MMW is mandatory input parameter\")\r\n",
+							"    mssparkutils.notebook.exit(\"is_first_MMW is mandatory input parameter\")\r\n",
+							"\r\n",
+							"else:        \r\n",
+							"    if is_first_MMW:\r\n",
+							"        #update QTR_MNEMONIC_OFFSET and CURR_QTR_INDC\r\n",
+							"        df_DIM_QTR_MNEMONIC_OFFSET = spark.sql(\"\"\"\r\n",
+							"            select distinct\r\n",
+							"            YEAR_QTR_SEQ_WED AS YEAR_QTR_SEQ_WED,\r\n",
+							"            YEAR_QTR_SEQ as YEAR_QTR_SEQ,\r\n",
+							"            DAILY_QTR_MNEMONIC_OFFSET AS DAILY_QTR_MNEMONIC_OFFSET,\r\n",
+							"            cast((QTR_MNEMONIC_OFFSET -1) AS SMALLINT) AS QTR_MNEMONIC_OFFSET,\r\n",
+							"            CURR_QTR_INDC AS CURR_QTR_INDC,\r\n",
+							"            IW_ROW_UPDT_TS AS IW_ROW_UPDT_TS from time.DIM_QTR_MNEMONIC_OFFSET T\r\n",
+							"        \"\"\")\r\n",
+							"        df_DIM_QTR_MNEMONIC_OFFSET = df_DIM_QTR_MNEMONIC_OFFSET.withColumn('CURR_QTR_INDC', lit('N'))\r\n",
+							"        df_DIM_QTR_MNEMONIC_OFFSET = df_DIM_QTR_MNEMONIC_OFFSET.withColumn(\"CURR_QTR_INDC\", when(df_DIM_QTR_MNEMONIC_OFFSET.QTR_MNEMONIC_OFFSET == 0, 'Y').otherwise('N'))\r\n",
+							"        logger.info(\"Writing data into TIME.DIM_QTR_MNEMONIC_OFFSET table\")\r\n",
+							"        df_DIM_QTR_MNEMONIC_OFFSET.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
+							"        logger.info(\"Load Completed: time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
+							"    else:\r\n",
+							"        #update DAILY_QTR_MNEMONIC_OFFSET\r\n",
+							"        df_DIM_QTR_MNEMONIC_OFFSET = spark.sql(\"\"\"\r\n",
+							"            select distinct\r\n",
+							"            YEAR_QTR_SEQ_WED AS YEAR_QTR_SEQ_WED,\r\n",
+							"            YEAR_QTR_SEQ as YEAR_QTR_SEQ,\r\n",
+							"            cast((DAILY_QTR_MNEMONIC_OFFSET -1) AS SMALLINT) AS DAILY_QTR_MNEMONIC_OFFSET,\r\n",
+							"            QTR_MNEMONIC_OFFSET AS QTR_MNEMONIC_OFFSET,\r\n",
+							"            CURR_QTR_INDC AS CURR_QTR_INDC,\r\n",
+							"            IW_ROW_UPDT_TS AS IW_ROW_UPDT_TS from time.DIM_QTR_MNEMONIC_OFFSET T\r\n",
+							"        \"\"\")\r\n",
+							"        logger.info(\"Writing data into TIME.DIM_QTR_MNEMONIC_OFFSET table\")\r\n",
+							"        df_DIM_QTR_MNEMONIC_OFFSET.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
+							"        logger.info(\"Load Completed: time.DIM_QTR_MNEMONIC_OFFSET\")"
+						],
+						"outputs": []
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Time_Dimensions')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Time"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {}
+				},
+				"metadata": {
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					}
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"#This notebook is to create REF_DAY_TIME.del file from REF_DAY_TIME_ESA.csv and load the del file into time.REF_DAY_TIME table.\r\n",
+							"#Use time.REF_DAY_TIME table to populate other time dimension tables."
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"%run utils/utils-adls-credentials"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"%run utils/utils-setup-logger"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from pyspark.sql import SparkSession\r\n",
+							"\r\n",
+							"from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DateType, TimestampType\r\n",
+							"\r\n",
+							"##init table from legacy\r\n",
+							"def main():\r\n",
+							"    logger.info(\"Starting Application ...\")\r\n",
+							"    sparkAppName = \"CreateREF_DAY_TIMEdel\"\r\n",
+							"    spark = SparkSession.builder.appName(sparkAppName).getOrCreate()\r\n",
+							"    adls_host = token_library.getSecret(key_vault_name,\"ooo-cz-adls-host\",key_vault_linked_service_name)\r\n",
+							"    basepath = \"/KYN_ISIP/time/raw/\"\r\n",
+							"\r\n",
+							"    # Reading REF_DAY_TIME_ESA.csv file and loading data into time.REF_DAY_TIME table\r\n",
+							"    logger.info(\"Started to create REF_DAY_TIME.del file from  REF_DAY_TIME_ESA.csv : \\n\")\r\n",
+							"    customSchema = StructType([ \r\n",
+							"        StructField(\"DAY_PERIOD_KEY\",  IntegerType(), True),\r\n",
+							"        StructField(\"DATE\", DateType(), True),\r\n",
+							"        StructField(\"DAY_NUM_IN_WEEK\",  IntegerType(), True),\r\n",
+							"        StructField(\"DAY_NUM_IN_MONTH\",  IntegerType(), True),\r\n",
+							"        StructField(\"DAY_NUM_IN_QTR\",  IntegerType(), True),\r\n",
+							"        StructField(\"DAY_NUM_IN_EPOCH\",  IntegerType(), True),\r\n",
+							"        StructField(\"RPT_DAY_NUM_IN_QTR\",  IntegerType(), True),\r\n",
+							"        StructField(\"DAY_OF_WEEK\", StringType(), True),\r\n",
+							"        StructField(\"DAY_OF_WK_SHRT_NM\", StringType(), True),\r\n",
+							"        StructField(\"RPT_WEEK_NUM_IN_MONTH\",  IntegerType(), True),\r\n",
+							"        StructField(\"RPT_WEEK_NUM_IN_QTR\",  IntegerType(), True),\r\n",
+							"        StructField(\"WEEK_NUM_IN_YEAR\",  IntegerType(), True),\r\n",
+							"        StructField(\"WEEK_NUM_IN_EPOCH\",  IntegerType(), True),\r\n",
+							"        StructField(\"MONTH_NUM_IN_QTR\",  IntegerType(), True),\r\n",
+							"        StructField(\"MONTH_NUM_IN_YEAR\", StringType(), True),\r\n",
+							"        StructField(\"MONTH_NUM_IN_EPOCH\",  IntegerType(), True),\r\n",
+							"        StructField(\"MONTH_NAME\", StringType(), True),\r\n",
+							"        StructField(\"MONTH_SHRT_NM\", StringType(), True),\r\n",
+							"        StructField(\"QTR\", StringType(), True),\r\n",
+							"        StructField(\"YEAR\", StringType(), True),\r\n",
+							"        StructField(\"LOAD_RPT_QTR\", StringType(), True),\r\n",
+							"        StructField(\"LOAD_RPT_YEAR\", StringType(), True),\r\n",
+							"        StructField(\"WEEK_NUM_IN_QTR\",  IntegerType(), True),\r\n",
+							"        StructField(\"YEAR_NUM\",  IntegerType(), True),\r\n",
+							"        StructField(\"FIFTEENWK_WK_IN_QTR_NUM\",  IntegerType(), True),\r\n",
+							"        StructField(\"FIFTEENWK_QTR_NUM\",  IntegerType(), True),\r\n",
+							"        StructField(\"FIFTEENWK_QTR_CODE\", StringType(), True),\r\n",
+							"        StructField(\"FIFTEENWK_YEAR_NUM\",  IntegerType(), True),\r\n",
+							"        StructField(\"FIFTEENWK_YEAR\",  StringType(), True)\r\n",
+							"    ])\r\n",
+							"    logger.info(\"Reading REF_DAY_TIME_ESA.csv file..\")\r\n",
+							"    ref_filename = adls_host + basepath + \"REF_DAY_TIME_ESA.csv\"\r\n",
+							"    df = sqlContext.read.format(\"csv\").option(\"delimiter\",\",\").option(\"header\", \"true\").load(ref_filename)\r\n",
+							"    df.write.mode(\"overwrite\").saveAsTable(\"time.REF_DAY_TIME\")\r\n",
+							"    logger.info(\"Saved data into time.REF_DAY_TIME table\")\r\n",
+							"\r\n",
+							"    #Using time.REF_DAY_TIME to create REF_DAY_TIME.del for REF_DAY_TIME.del\r\n",
+							"    logger.info(\"Started SQL logic to populate data for  REF_DAY_TIME.del file\")\r\n",
+							"    df = spark.sql(\"\"\"\r\n",
+							"            WITH GET_RPT_WEEK_NUM_IN_QTR AS (\r\n",
+							"            SELECT AL1.DATE,\r\n",
+							"            CASE WHEN AL2.MIN_DAY_NUM_IN_WEEK IN (4,5,6,7) THEN AL1.RPT_WEEK_NUM_IN_QTR - 1 ELSE AL1.RPT_WEEK_NUM_IN_QTR END AS RPT_WEEK_NUM_IN_QTR\r\n",
+							"            FROM time.REF_DAY_TIME AL1\r\n",
+							"            LEFT JOIN (\r\n",
+							"            SELECT YEAR_NUM, QTR, MIN(DAY_NUM_IN_WEEK) MIN_DAY_NUM_IN_WEEK FROM \r\n",
+							"            time.REF_DAY_TIME WHERE RPT_WEEK_NUM_IN_QTR = 1 AND MONTH_NUM_IN_QTR = 1 AND \r\n",
+							"            DATE BETWEEN '1900-01-01' AND '2200-12-31' GROUP BY YEAR_NUM, QTR)  AL2 \r\n",
+							"            ON AL1.YEAR_NUM = AL2.YEAR_NUM AND AL1.QTR = AL2.QTR\r\n",
+							"            WHERE DAY_NUM_IN_WEEK = 3 AND DATE BETWEEN '1900-01-01' AND '2200-12-31' )\r\n",
+							"            SELECT\r\n",
+							"            RDT.DATE AS DAY_DATE,\r\n",
+							"            RDT.DAY_NUM_IN_WEEK AS DAY_IN_WEEK_NUM,\r\n",
+							"            RDT.DAY_NUM_IN_MONTH AS DAY_IN_MONTH_NUM,\r\n",
+							"            RDT.DAY_NUM_IN_QTR AS DAY_IN_QTR_NUM,\r\n",
+							"            RDT.DAY_OF_WEEK AS DAY_OF_WEEK_NAME,\r\n",
+							"            RDT.DAY_OF_WK_SHRT_NM AS DAY_OF_WEEK_SHRT_NAME,\r\n",
+							"            RDT.RPT_WEEK_NUM_IN_QTR AS WK_IN_QTR_NUM,\r\n",
+							"            GT.RPT_WEEK_NUM_IN_QTR AS RPT_WK_IN_QTR_NUM,\r\n",
+							"            WEEKOFYEAR(RDT.DATE) AS WK_IN_YEAR_NUM,\r\n",
+							"            RDT.MONTH_NUM_IN_QTR AS MONTH_IN_QTR_NUM,\r\n",
+							"            CAST(RDT.MONTH_NUM_IN_YEAR AS SMALLINT) AS MONTH_IN_YEAR_NUM,\r\n",
+							"            CAST(RDT.MONTH_NUM_IN_YEAR AS SMALLINT) AS MONTH_IN_FISCAL_YEAR_NUM,\r\n",
+							"            RDT.MONTH_NAME AS MONTH_NAME,\r\n",
+							"            RDT.MONTH_SHRT_NM AS MONTH_SHRT_NAME,\r\n",
+							"            CAST(SUBSTR(RDT.QTR,2,1) AS SMALLINT) AS QTR_NUM,\r\n",
+							"            RDT.YEAR_NUM AS YEAR_NUM,\r\n",
+							"            CAST(SUBSTR(RDT.QTR,2,1) AS SMALLINT) AS FISCAL_QTR_NUM,\r\n",
+							"            RDT.YEAR_NUM AS FISCAL_YEAR_NUM\r\n",
+							"            FROM\r\n",
+							"            time.REF_DAY_TIME RDT LEFT JOIN GET_RPT_WEEK_NUM_IN_QTR GT ON \r\n",
+							"            RDT.DATE = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,1,RDT.DATE) AS DATE)  = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,2,RDT.DATE) AS DATE) = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,3,RDT.DATE) AS DATE) = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,4,RDT.DATE) AS DATE)= GT.DATE\r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,5,RDT.DATE) AS DATE) = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,6,RDT.DATE) AS DATE) = GT.DATE\r\n",
+							"            WHERE\r\n",
+							"            RDT.DAY_PERIOD_KEY > 0\r\n",
+							"            AND RDT.DATE <= '2022-03-31'\r\n",
+							"            -- AND RDT.DATE > '2021-03-31'\r\n",
+							"\r\n",
+							"            UNION\r\n",
+							"\r\n",
+							"            SELECT\r\n",
+							"            RDT.DATE AS DAY_DATE,\r\n",
+							"            RDT.DAY_NUM_IN_WEEK AS DAY_IN_WEEK_NUM,\r\n",
+							"            RDT.DAY_NUM_IN_MONTH AS DAY_IN_MONTH_NUM,\r\n",
+							"            RDT.DAY_NUM_IN_QTR AS DAY_IN_QTR_NUM,\r\n",
+							"            RDT.DAY_OF_WEEK AS DAY_OF_WEEK_NAME,\r\n",
+							"            RDT.DAY_OF_WK_SHRT_NM AS DAY_OF_WEEK_SHRT_NAME,\r\n",
+							"            RDT.RPT_WEEK_NUM_IN_QTR AS WK_IN_QTR_NUM,\r\n",
+							"            GT.RPT_WEEK_NUM_IN_QTR AS RPT_WK_IN_QTR_NUM,\r\n",
+							"            WEEKOFYEAR(RDT.DATE) AS WK_IN_YEAR_NUM,\r\n",
+							"            RDT.MONTH_NUM_IN_QTR AS MONTH_IN_QTR_NUM,\r\n",
+							"            CAST(RDT.MONTH_NUM_IN_YEAR AS SMALLINT) AS MONTH_IN_YEAR_NUM,\r\n",
+							"            CASE WHEN CAST(MONTH_NUM_IN_YEAR AS SMALLINT) IN (1,2,3) THEN CAST(MONTH_NUM_IN_YEAR AS SMALLINT) + 9 ELSE CAST(MONTH_NUM_IN_YEAR AS SMALLINT) - 3 END AS MONTH_IN_FISCAL_YEAR_NUM,\r\n",
+							"            RDT.MONTH_NAME AS MONTH_NAME,\r\n",
+							"            RDT.MONTH_SHRT_NM AS MONTH_SHRT_NAME,\r\n",
+							"            CAST(SUBSTR(RDT.QTR,2,1) AS SMALLINT) AS QTR_NUM,\r\n",
+							"            RDT.YEAR_NUM AS YEAR_NUM,\r\n",
+							"            CAST(CASE WHEN CAST(SUBSTR(TRIM(RDT.QTR),2,1) AS SMALLINT) = 1 THEN 4 ELSE (CAST(SUBSTR(TRIM(RDT.QTR),2,1) AS SMALLINT) -1) END AS SMALLINT) AS FISCAL_QTR_NUM,\r\n",
+							"            CAST(CASE WHEN CAST(SUBSTR(TRIM(RDT.QTR),2,1) AS SMALLINT) = 1 THEN CAST(RDT.YEAR AS SMALLINT) ELSE (CAST(RDT.YEAR AS SMALLINT) + 1) END AS SMALLINT) AS FISCAL_YEAR_NUM\r\n",
+							"            FROM\r\n",
+							"            time.REF_DAY_TIME RDT LEFT JOIN GET_RPT_WEEK_NUM_IN_QTR GT ON \r\n",
+							"            RDT.DATE = GT.DATE \r\n",
+							"            OR\r\n",
+							"            CAST(DATEADD(DAY,1,RDT.DATE) AS DATE)  = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,2,RDT.DATE) AS DATE) = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,3,RDT.DATE) AS DATE) = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,4,RDT.DATE) AS DATE)= GT.DATE\r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,5,RDT.DATE) AS DATE) = GT.DATE \r\n",
+							"            OR \r\n",
+							"            CAST(DATEADD(DAY,6,RDT.DATE) AS DATE) = GT.DATE\r\n",
+							"            WHERE\r\n",
+							"            RDT.DAY_PERIOD_KEY > 0\r\n",
+							"            AND RDT.DATE > '2022-03-31'         \r\n",
+							"            AND RDT.DATE <= '2200-12-31' \r\n",
+							"    \"\"\")\r\n",
+							"    del_filename = adls_host + basepath + \"REF_DAY_TIME.del\"\r\n",
+							"    df.repartition(1).write.option(\"header\",True).option(\"delimiter\",\",\").csv(del_filename,mode='overwrite')\r\n",
+							"    logger.info(\"created REF_DAY_TIME.del file \\n\")\r\n",
+							"\r\n",
+							"if __name__ == \"__main__\":\r\n",
+							"    main()\r\n",
+							"\r\n",
+							""
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# from pyspark.sql import SparkSesion\r\n",
+							"from pyspark.sql.types import *\r\n",
+							"from pyspark.sql.functions import *\r\n",
+							"\r\n",
+							"##init table from legacy\r\n",
+							"def main():\r\n",
+							"\tlogger.info(\"Starting Application ...\")\r\n",
+							"\tsparkAppName = \"LoadTimeTables\"\r\n",
+							"\t#    spark = SparkSesion.builder.appName(sparkAppName).getOrCreate()\r\n",
+							"\tadls_host = token_library.getSecret(key_vault_name,\"ooo-cz-adls-host\",key_vault_linked_service_name)\r\n",
+							"\tdel_filename = adls_host + '/KYN_ISIP/time/raw/' + 'REF_DAY_TIME.del'\r\n",
+							"\r\n",
+							"\t#Reading REF_DAY_TIME.del file into a dataframe\r\n",
+							"\tlogger.info(\"Reading REF_DAY_TIME_ESA.csv file..\")\r\n",
+							"\tdf = sqlContext.read.format(\"csv\").option(\"delimiter\",\",\").option(\"header\", \"true\").load(del_filename).createOrReplaceTempView(\"REF_DAY_TIME_temp\")\r\n",
+							"\r\n",
+							"\t#Load TIME.DIM_DAY table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for TIME.DIM_DAY table\")\r\n",
+							"\tdf_dim_day = spark.sql(\"\"\"\r\n",
+							"\t\tSELECT \r\n",
+							"\t\tcast(T.DAY_DATE AS date) as DAY_DATE,\r\n",
+							"\t\tcast(((T.YEAR_NUM - 1) * 104) + ((T.QTR_NUM - 1) * 14) + CASE WHEN T.WK_IN_QTR_NUM = 0 THEN 1 ELSE T.WK_IN_QTR_NUM END as integer) AS YEAR_QTR_WK_SEQ,\r\n",
+							"\t\tcast(((T.FISCAL_YEAR_NUM - 1) * 104) + ((T.FISCAL_QTR_NUM - 1) * 14) + T.RPT_WK_IN_QTR_NUM as integer) AS YEAR_QTR_WK_SEQ_WED,\r\n",
+							"\t\tcast(((T.YEAR_NUM - 1) * 12) + T.MONTH_IN_YEAR_NUM AS integer) as YEAR_MONTH_SEQ,\r\n",
+							"\t\tcast(((T.FISCAL_YEAR_NUM - 1) * 12) + T.MONTH_IN_FISCAL_YEAR_NUM AS integer) as  YEAR_MONTH_SEQ_WED,\r\n",
+							"\t\tcast(((T.YEAR_NUM - 1) * 4) + T.QTR_NUM AS integer) as YEAR_QTR_SEQ,\r\n",
+							"\t\tcast(((T.FISCAL_YEAR_NUM - 1) * 4) + T.FISCAL_QTR_NUM AS integer) as  YEAR_QTR_SEQ_WED,\r\n",
+							"\t\tcast(T.DAY_IN_WEEK_NUM as integer) as DAY_IN_WEEK_NUM,\r\n",
+							"\t\tcast(T.DAY_IN_MONTH_NUM as integer) as DAY_IN_MONTH_NUM,\r\n",
+							"\t\tcast(T.DAY_IN_QTR_NUM as integer) as DAY_IN_QTR_NUM,\r\n",
+							"\t\tT.DAY_OF_WEEK_NAME,\r\n",
+							"\t\tT.DAY_OF_WEEK_SHRT_NAME, \r\n",
+							"\t\tCURRENT_TIMESTAMP AS IW_ROW_UPDT_TS\r\n",
+							"\t\tFROM \r\n",
+							"\t\tREF_DAY_TIME_temp T\r\n",
+							"\t\"\"\")\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_DAY table\")\r\n",
+							"\tdf_dim_day.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"TIME.DIM_DAY\")\r\n",
+							"\tlogger.info(\"Load Completed:TIME.DIM_DAY\")\r\n",
+							"\tlogger.info(\"--------------------------------------------------\")\r\n",
+							"\r\n",
+							"\t#Load TIME.DIM_MONTH_YEAR table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for TIME.DIM_MONTH_YEAR table\")\r\n",
+							"\tdf_DIM_MONTH_YEAR = spark.sql(\"\"\"\r\n",
+							"\t\tSELECT DISTINCT\r\n",
+							"\t\tcast(((T.YEAR_NUM - 1) * 12) + T.MONTH_IN_YEAR_NUM AS integer) as YEAR_MONTH_SEQ,\r\n",
+							"\t\tcast(((T.YEAR_NUM - 1) * 4) + T.QTR_NUM AS integer) as YEAR_QTR_SEQ,\r\n",
+							"\t\tcast(T.MONTH_IN_QTR_NUM as integer) as MONTH_IN_QTR_NUM,\r\n",
+							"\t\tcast(T.MONTH_IN_YEAR_NUM as integer) as MONTH_IN_YEAR_NUM,\r\n",
+							"\t\tT.MONTH_NAME,\r\n",
+							"\t\tT.MONTH_SHRT_NAME,\r\n",
+							"\t\tCURRENT_TIMESTAMP AS IW_ROW_UPDT_TS\r\n",
+							"\t\tFROM \r\n",
+							"\t\tREF_DAY_TIME_temp T\r\n",
+							"\t\"\"\")\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_MONTH_YEAR table\")\r\n",
+							"\tdf_DIM_MONTH_YEAR.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"TIME.DIM_MONTH_YEAR\")\r\n",
+							"\tlogger.info(\"Load Completed:DIM_MONTH_YEAR\")\r\n",
+							"\tlogger.info(\"--------------------------------------------------\")\r\n",
+							"\r\n",
+							"\r\n",
+							"\t#Load TIME.DIM_WK_QTR_YEAR table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for TIME.DIM_WK_QTR_YEAR table\")\r\n",
+							"\tdf_DIM_WK_QTR_YEAR = spark.sql(\"\"\"\r\n",
+							"\t\twith temp2 AS (\r\n",
+							"\t\tSELECT YEAR_QTR_WK_SEQ,\r\n",
+							"\t\tYEAR_QTR_SEQ, \r\n",
+							"\t\tWK_IN_QTR_NUM,\r\n",
+							"\t\tWK_IN_YEAR_NUM, \r\n",
+							"\t\tROW_NUMBER() OVER \r\n",
+							"\t\t(PARTITION  BY YEAR_QTR_WK_SEQ ORDER BY WK_IN_YEAR_NUM) RN  FROM (\r\n",
+							"\t\tSELECT DISTINCT \r\n",
+							"\t\t\t((T.YEAR_NUM - 1) * 104) + ((T.QTR_NUM - 1) * 14) + CASE WHEN T.WK_IN_QTR_NUM = 0 THEN 1 ELSE T.WK_IN_QTR_NUM  END AS YEAR_QTR_WK_SEQ,\r\n",
+							"\t\t\t((T.YEAR_NUM - 1) * 4) + T.QTR_NUM AS YEAR_QTR_SEQ,\r\n",
+							"\t\t\tT.WK_IN_QTR_NUM,\r\n",
+							"\t\t\tT.WK_IN_YEAR_NUM\r\n",
+							"\t\tFROM \r\n",
+							"\t\tREF_DAY_TIME_temp T) temp1\r\n",
+							"\t\t)\r\n",
+							"\t\tSELECT \r\n",
+							"\t\tcast(YEAR_QTR_WK_SEQ as integer) as YEAR_QTR_WK_SEQ,\r\n",
+							"\t\tcast(YEAR_QTR_SEQ as integer) as YEAR_QTR_SEQ, \r\n",
+							"\t\tcast(WK_IN_QTR_NUM as integer) as WK_IN_QTR_NUM, \r\n",
+							"\t\tcast(WK_IN_YEAR_NUM as integer) as WK_IN_YEAR_NUM, \r\n",
+							"\t\tcurrent_timestamp AS IW_ROW_UPDT_TS\r\n",
+							"\t\tFROM temp2 WHERE RN = 1 \r\n",
+							"\t\"\"\")\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_WK_QTR_YEAR table\")\r\n",
+							"\tdf_DIM_WK_QTR_YEAR.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"TIME.DIM_WK_QTR_YEAR\")\r\n",
+							"\tlogger.info(\"Load Completed: TIME.DIM_WK_QTR_YEAR\")\r\n",
+							"\tlogger.info(\"--------------------------------------------------\")\r\n",
+							"\r\n",
+							"\t#Load TIME.DIM_QTR_YEAR table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for TIME.DIM_QTR_YEAR table\")\r\n",
+							"\tdf_DIM_QTR_YEAR = spark.sql(\"\"\"\r\n",
+							"\t\tSELECT DISTINCT\r\n",
+							"\t\tcast((((T.YEAR_NUM - 1) * 4) + T.QTR_NUM) as Integer) AS YEAR_QTR_SEQ,\r\n",
+							"\t\tcast(T.QTR_NUM as Integer) as QTR_NUM,\r\n",
+							"\t\tcast(T.YEAR_NUM as Integer) as YEAR_NUM,\r\n",
+							"\t\tCURRENT_TIMESTAMP AS IW_ROW_UPDT_TS\r\n",
+							"\t\tFROM \r\n",
+							"\t\tREF_DAY_TIME_temp T\r\n",
+							"\t\"\"\")\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_QTR_YEAR table\")\r\n",
+							"\tdf_DIM_QTR_YEAR.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_QTR_YEAR\")\r\n",
+							"\tlogger.info(\"Load Completed: time.DIM_QTR_YEAR\")\r\n",
+							"\tlogger.info(\"--------------------------------------------------\")\r\n",
+							"\r\n",
+							"\t#Load TIME.DIM_WK_QTR_YEAR_BUS table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for TIME.DIM_WK_QTR_YEAR_BUS table\")\r\n",
+							"\tdf_DIM_WK_QTR_YEAR_BUS = spark.sql(\"\"\"\r\n",
+							"\t\twith MAX_RPT_WEEK_IN_QTR AS (\r\n",
+							"\t\tSELECT YEAR_NUM, QTR_NUM, COUNT(DISTINCT RPT_WK_IN_QTR_NUM) MAX_RPT_WEEK_IN_QTR_NUM FROM  REF_DAY_TIME_temp WHERE\r\n",
+							"\t\tDAY_DATE BETWEEN '1900-01-01' AND '2200-12-31' GROUP BY YEAR_NUM, QTR_NUM\r\n",
+							"\t\t)\r\n",
+							"\t\tSELECT DISTINCT \r\n",
+							"\t\tcast((((T.FISCAL_YEAR_NUM - 1) * 104) + ((T.FISCAL_QTR_NUM - 1) * 14) + T.RPT_WK_IN_QTR_NUM) as integer) AS YEAR_QTR_WK_SEQ_WED,\r\n",
+							"\t\tcast((((T.FISCAL_YEAR_NUM - 1) * 4) + T.FISCAL_QTR_NUM) as integer) AS YEAR_QTR_SEQ_WED,\r\n",
+							"\t\tcast(T.RPT_WK_IN_QTR_NUM as Integer) as WK_IN_QTR_NUM_WED,\r\n",
+							"\t\tcast((T.RPT_WK_IN_QTR_NUM - (MRW.MAX_RPT_WEEK_IN_QTR_NUM + 1)) as integer) AS WK_RO_IN_QTR_NUM_WED,\r\n",
+							"\t\tCAST(CASE WHEN T.RPT_WK_IN_QTR_NUM = MRW.MAX_RPT_WEEK_IN_QTR_NUM THEN 'Y' ELSE 'N' END  AS CHAR(3)) AS FV_WEEKS_INDC,\r\n",
+							"\t\tCURRENT_TIMESTAMP AS IW_ROW_UPDT_TS\r\n",
+							"\t\tFROM \r\n",
+							"\t\tREF_DAY_TIME_temp T\r\n",
+							"\t\tLEFT JOIN MAX_RPT_WEEK_IN_QTR MRW ON T.YEAR_NUM = MRW.YEAR_NUM AND T.QTR_NUM = MRW.QTR_NUM\r\n",
+							"\t\tORDER BY 1\r\n",
+							"\t\"\"\")\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_WK_QTR_YEAR_BUS table\")\r\n",
+							"\tdf_DIM_WK_QTR_YEAR_BUS.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_WK_QTR_YEAR_BUS\")\r\n",
+							"\tlogger.info(\"Load Completed: time.DIM_WK_QTR_YEAR_BUS\")\r\n",
+							"\tlogger.info(\"--------------------------------------------------\")\r\n",
+							"\r\n",
+							"\r\n",
+							"\t#Load TIME.DIM_MONTH_YEAR_BUS table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for TIME.DIM_MONTH_YEAR_BUS table\")\r\n",
+							"\tdf_DIM_MONTH_YEAR_BUS = spark.sql(\"\"\"\r\n",
+							"\t\tSELECT DISTINCT \r\n",
+							"\t\tcast((((T.FISCAL_YEAR_NUM - 1) * 12) + T.MONTH_IN_FISCAL_YEAR_NUM) as integer) AS YEAR_MONTH_SEQ_WED,\r\n",
+							"\t\tcast((((T.FISCAL_YEAR_NUM - 1) * 4) + T.FISCAL_QTR_NUM) as integer) AS YEAR_QTR_SEQ_WED,\r\n",
+							"\t\tcast(T.MONTH_IN_FISCAL_YEAR_NUM as Integer) as MONTH_IN_FISCAL_YEAR_NUM,\r\n",
+							"\t\tCURRENT_TIMESTAMP AS IW_ROW_UPDT_TS\r\n",
+							"\t\tFROM \r\n",
+							"\t\tREF_DAY_TIME_temp T\r\n",
+							"\t\"\"\")\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_MONTH_YEAR_BUS table\")\r\n",
+							"\tdf_DIM_MONTH_YEAR_BUS.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_MONTH_YEAR_BUS\")\r\n",
+							"\tlogger.info(\"Load Completed:  Time.DIM_MONTH_YEAR_BUS\")\r\n",
+							"\tlogger.info(\"--------------------------------------------------\")\r\n",
+							"\t#Load TIME.DIM_QTR_YEAR_BUS table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for table time.DIM_QTR_YEAR_BUS\")\r\n",
+							"\tdf_DIM_QTR_YEAR_BUS = spark.sql(\"\"\"\r\n",
+							"\t\tSELECT DISTINCT \r\n",
+							"\t\tcast((((T.FISCAL_YEAR_NUM - 1) * 4) + T.FISCAL_QTR_NUM) as integer) AS YEAR_QTR_SEQ_WED,\r\n",
+							"\t\tcast(T.FISCAL_QTR_NUM as integer) as FISCAL_QTR_NUM,\r\n",
+							"\t\tcast(T.FISCAL_YEAR_NUM as integer) as FISCAL_YEAR_NUM,\r\n",
+							"\t\tCURRENT_TIMESTAMP AS IW_ROW_UPDT_TS\r\n",
+							"\t\tFROM \r\n",
+							"\t\tREF_DAY_TIME_temp T\r\n",
+							"\t\"\"\")\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_QTR_YEAR_BUS table\")\r\n",
+							"\tdf_DIM_QTR_YEAR_BUS.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_QTR_YEAR_BUS\")\r\n",
+							"\tlogger.info(\"Load Completed: time.DIM_QTR_YEAR_BUS\")\r\n",
+							"\tlogger.info(\"--------------------------------------------------\")\r\n",
+							"\r\n",
+							"\t#Load TIME.DIM_QTR_MNEMONIC_OFFSET table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for table time.DIM_QTR_MNEMONIC_OFFSET from DIM_QTR_MNEMONIC_OFFSET.csv\")\r\n",
+							"\tmnemonic_file = adls_host + '/KYN_ISIP/time/raw/' + \"DIM_QTR_MNEMONIC_OFFSET.csv\"\r\n",
+							"\tlogger.info(\"Reaing DIM_QTR_MNEMONIC_OFFSET.csv file\")\r\n",
+							"\tdf_mnemonic_file = sqlContext.read.format(\"csv\").option(\"delimiter\",\",\").option(\"header\", \"true\").load(mnemonic_file).createOrReplaceTempView(\"DIM_QTR_MNEMONIC_OFFSET_TEMP\")\r\n",
+							"\tdf_DIM_QTR_MNEMONIC_OFFSET = spark.sql(\"\"\"\r\n",
+							"\t\tselect distinct\r\n",
+							"\t\tcast((((T.FISCAL_YEAR_NUM - 1) * 4) + T.FISCAL_QTR_NUM) as integer) AS YEAR_QTR_SEQ_WED,\r\n",
+							"\t\tcast(((T.YEAR_NUM - 1) * 4) + T.QTR_NUM AS integer) as YEAR_QTR_SEQ,\r\n",
+							"\t\tcast(((T.YEAR_NUM) * 4 + T.QTR_NUM) - (YEAR(CURRENT_DATE) * 4 + QUARTER(CURRENT_DATE)) AS SMALLINT) AS DAILY_QTR_MNEMONIC_OFFSET,\r\n",
+							"\t\tcast(((T.YEAR_NUM) * 4 + T.QTR_NUM) - (YEAR(CURRENT_DATE) * 4 + QUARTER(CURRENT_DATE)) AS SMALLINT) AS QTR_MNEMONIC_OFFSET,\r\n",
+							"\t\tCASE \r\n",
+							"\t\tWHEN YEAR(CURRENT_DATE) = T.YEAR_NUM AND QUARTER(CURRENT_DATE) = T.QTR_NUM THEN 'Y' \r\n",
+							"\t\tELSE 'N' \r\n",
+							"\t\tEND AS CURR_QTR_INDC,\r\n",
+							"\t\tCURRENT_TIMESTAMP AS IW_ROW_UPDT_TS from REF_DAY_TIME_temp T\r\n",
+							"\t\"\"\")\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_QTR_MNEMONIC_OFFSET table\")\r\n",
+							"\tdf_DIM_QTR_MNEMONIC_OFFSET.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
+							"\tlogger.info(\"Load Completed: time.DIM_QTR_MNEMONIC_OFFSET\")\r\n",
+							"\tlogger.info(\"--------------------------------------------------\")\r\n",
+							"\r\n",
+							"\t#Load TIME.DIM_MNEMONIC table.\r\n",
+							"\tlogger.info(\"Executing SQL to get data for table time.DIM_MNEMONIC from DIM_MNEMONIC.csv\")\r\n",
+							"\tmnemonic_file = adls_host + '/KYN_ISIP/time/raw/' + \"DIM_MNEMONIC.csv\"\r\n",
+							"\tlogger.info(\"Reading DIM_MNEMONIC.csv file\")\r\n",
+							"\tdf_mnemonic_file = sqlContext.read.format(\"csv\").option(\"delimiter\",\",\").option(\"header\", \"true\").load(mnemonic_file).createOrReplaceTempView(\"DIM_MNEMONIC_TEMP\")\r\n",
+							"\r\n",
+							"\tdf_DIM_MNEMONIC = spark.sql(\"\"\"\r\n",
+							"\t\tselect \r\n",
+							"\t\tcast(T.DIM_QTR_MNEMONIC_OFFSET as integer) as DIM_QTR_MNEMONIC_OFFSET,\r\n",
+							"\t\tQTR_MNEMONIC_ID as QTR_MNEMONIC_ID,\r\n",
+							"\t\tQTR_MNEMONIC_DESCR as QTR_MNEMONIC_DESCR,\r\n",
+							"\t\tACTIVE_INDC as ACTIVE_INDC,\r\n",
+							"\t\tCURRENT_TIMESTAMP AS IW_ROW_UPDT_TS from DIM_MNEMONIC_TEMP T\r\n",
+							"\t\"\"\")\r\n",
+							"\r\n",
+							"\tlogger.info(\"Writing data into TIME.DIM_MNEMONIC table\")\r\n",
+							"\tdf_DIM_MNEMONIC.write.format(\"delta\").mode(\"overwrite\").saveAsTable(\"time.DIM_MNEMONIC\")\r\n",
+							"\tlogger.info(\"Load Completed: time.DIM_MNEMONIC\")\r\n",
+							"\tlogger.info(\"------------------END OF TIME DIMENSION TABLE LOADS---------------\")\r\n",
+							"\r\n",
+							"if __name__ == \"__main__\":\r\n",
+							"    main()\r\n",
+							"\r\n",
+							"\r\n",
+							"\r\n",
+							""
+						],
+						"outputs": []
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Time_Setup')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Time/install"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {}
+				},
+				"metadata": {
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					}
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Setup Notebook for Time Ingestion\r\n",
+							"# creates schema and tables for Time ingestion\r\n",
+							"# Upload REF_DAY_TIME_ESA.csv, DIM_QTR_MNEMONIC_OFFSET.csv static files into KYN_ISIP/time/raw folder\r\n",
+							"\r\n",
+							""
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"%run utils/utils-adls-credentials"
+						],
+						"outputs": []
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"spark.sql(\"CREATE SCHEMA Time LOCATION '{0}/KYN_ISIP/time/lakedb'\".format(adls_host))"
+						],
+						"outputs": []
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/testNotebook')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {}
+				},
+				"metadata": {
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					}
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"mssparkutils.notebook.exit(\"Done!!!\") "
+						],
+						"outputs": []
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/Database1')]",
 			"type": "Microsoft.Synapse/workspaces/databases",
 			"apiVersion": "2019-06-01-preview",
@@ -356,7 +1135,10 @@
 									"FormatType": "csv",
 									"LinkedServiceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage"
 								}
-							}
+							},
+							"PublishStatus": "PUBLISHED",
+							"ObjectVersion": 1,
+							"ObjectId": "1bca3f74-b72d-4fd3-8678-a7751ae26b85"
 						},
 						"Source": {
 							"Type": "SPARK"
@@ -368,15 +1150,14 @@
 						"NewEntity": {
 							"Name": "Animal",
 							"EntityType": "TABLE",
-							"Namespace": {
-								"DatabaseName": "Database1"
-							},
-							"Description": "Livestock - domestic farm animals kept for productive purposes (meat, milk, work, wool)",
 							"TableType": "EXTERNAL",
-							"Origin": {
-								"Type": "SPARK"
+							"Namespace": {
+								"SchemaName": null,
+								"DatabaseName": "Database1",
+								"DatabaseId": null
 							},
 							"StorageDescriptor": {
+								"Distribution": null,
 								"Columns": [
 									{
 										"Name": "AnimalId",
@@ -385,6 +1166,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": false,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -402,6 +1186,8 @@
 											"IsComplexType": false,
 											"IsNullable": true,
 											"Length": 128,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "string"
 											}
@@ -419,6 +1205,8 @@
 											"IsComplexType": false,
 											"IsNullable": true,
 											"Length": 512,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "string"
 											}
@@ -435,6 +1223,9 @@
 											"TypeName": "date",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"DateFormat": "YYYY-MM-DD",
 												"HIVE_TYPE_STRING": "date"
@@ -452,6 +1243,9 @@
 											"TypeName": "date",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"DateFormat": "YYYY-MM-DD",
 												"HIVE_TYPE_STRING": "date"
@@ -469,6 +1263,9 @@
 											"TypeName": "date",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"DateFormat": "YYYY-MM-DD",
 												"HIVE_TYPE_STRING": "date"
@@ -486,6 +1283,9 @@
 											"TypeName": "boolean",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "boolean"
 											}
@@ -502,6 +1302,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -518,6 +1321,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -534,6 +1340,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -550,6 +1359,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -566,6 +1378,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -582,6 +1397,9 @@
 											"TypeName": "boolean",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "boolean"
 											}
@@ -598,6 +1416,9 @@
 											"TypeName": "boolean",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "boolean"
 											}
@@ -614,6 +1435,9 @@
 											"TypeName": "boolean",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "boolean"
 											}
@@ -630,6 +1454,9 @@
 											"TypeName": "boolean",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "boolean"
 											}
@@ -646,6 +1473,9 @@
 											"TypeName": "boolean",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "boolean"
 											}
@@ -662,6 +1492,9 @@
 											"TypeName": "boolean",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "boolean"
 											}
@@ -678,6 +1511,9 @@
 											"TypeName": "boolean",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "boolean"
 											}
@@ -694,6 +1530,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -710,6 +1549,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -726,6 +1568,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -742,6 +1587,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -758,6 +1606,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -774,6 +1625,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -790,6 +1644,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -806,6 +1663,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -822,6 +1682,9 @@
 											"TypeName": "integer",
 											"IsComplexType": false,
 											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
 											"Properties": {
 												"HIVE_TYPE_STRING": "integer"
 											}
@@ -832,6 +1695,7 @@
 										}
 									}
 								],
+								"ColumnSetEntityName": "54d14c36-71c2-403f-92cf-7d2c1dfe375d",
 								"Format": {
 									"InputFormat": "org.apache.hadoop.mapred.SequenceFileInputFormat",
 									"OutputFormat": "org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat",
@@ -863,18 +1727,35 @@
 									"derivedModelAttributeInfo": "{\"attributeReferences\":{\"AnimalId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalId\"},\"AnimalName\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalName\"},\"AnimalDescription\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDescription\"},\"AnimalDataOfBirth\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDataOfBirth\"},\"AnimalDateOfDeath\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDateOfDeath\"},\"AnimalDateOfSlaughter\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDateOfSlaughter\"},\"MarketAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MarketAnimalIndicator\"},\"CattleBreedId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CattleBreedId\"},\"WeightAtBirthPounds\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"WeightAtBirthPounds\"},\"WeightAtSlaughterPounds\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"WeightAtSlaughterPounds\"},\"CalvingIntervalDays\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CalvingIntervalDays\"},\"GestationPeriodDays\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"GestationPeriodDays\"},\"PedigreeAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"PedigreeAnimalIndicator\"},\"CrossBreedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CrossBreedAnimalIndicator\"},\"CertifiedGrainfedIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CertifiedGrainfedIndicator\"},\"GrassFedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"GrassFedAnimalIndicator\"},\"LongfedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"LongfedAnimalIndicator\"},\"LotfedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"LotfedAnimalIndicator\"},\"PastureFedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"PastureFedAnimalIndicator\"},\"CarcassQualityGradeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CarcassQualityGradeId\"},\"MeatQualityGradeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MeatQualityGradeId\"},\"UsdaYieldGradeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"UsdaYieldGradeId\"},\"EstimatedBreedingValueId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"EstimatedBreedingValueId\"},\"MuscleScoreId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MuscleScoreId\"},\"BodyConditionScoreId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"BodyConditionScoreId\"},\"AnimalFrameSizeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalFrameSizeId\"},\"RfidTagId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"RfidTagId\"},\"CattleTypeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CattleTypeId\"}}}"
 								},
 								"Compressed": false,
+								"SerDeInfo": null,
 								"IsStoredAsSubdirectories": false
 							},
+							"Owner": null,
+							"CreateTime": 0,
+							"LastAccessTime": 0,
+							"Retention": 0,
+							"Temporary": false,
+							"IsRewriteEnabled": false,
+							"ViewOriginalText": null,
+							"ViewExpandedText": null,
+							"Origin": {
+								"Type": "SPARK"
+							},
+							"OriginObjectId": null,
+							"IsSharedEntity": false,
+							"PublishStatus": "PUBLISHED",
 							"Properties": {
 								"DerivedModelEntityInfo": "{\"entityDirectives\":{\"baseEntityReference\":{\"name\":\"Animal\",\"path\":\"Animal.cdm.json/Animal\"},\"description\":\"Livestock - domestic farm animals kept for productive purposes (meat, milk, work, wool)\",\"primaryKey\":[\"AnimalId\"],\"projectionInfo\":{\"attributes\":[{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of an animal.\",\"isNullable\":false,\"name\":\"AnimalId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalName\"},\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The name of the animal.\",\"isNullable\":true,\"name\":\"AnimalName\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDescription\"},\"dataType\":\"string\",\"dataTypeLength\":512,\"description\":\"The description of the animal.\",\"isNullable\":true,\"name\":\"AnimalDescription\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDataOfBirth\"},\"dataType\":\"date\",\"dateFormat\":\"YYYY-MM-DD\",\"description\":\"The date of birth of the animal.\",\"isNullable\":true,\"name\":\"AnimalDataOfBirth\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDateOfDeath\"},\"dataType\":\"date\",\"dateFormat\":\"YYYY-MM-DD\",\"description\":\"The date that the animal died.\",\"isNullable\":true,\"name\":\"AnimalDateOfDeath\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDateOfSlaughter\"},\"dataType\":\"date\",\"dateFormat\":\"YYYY-MM-DD\",\"description\":\"The date that the animal was slaughtered.\",\"isNullable\":true,\"name\":\"AnimalDateOfSlaughter\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MarketAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"Livestock bred and raised for food consumption\",\"isNullable\":true,\"name\":\"MarketAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CattleBreedId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a cattle breed.\",\"isNullable\":true,\"name\":\"CattleBreedId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"WeightAtBirthPounds\"},\"dataType\":\"integer\",\"description\":\"The weight of the animal at birth.\",\"isNullable\":true,\"name\":\"WeightAtBirthPounds\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"WeightAtSlaughterPounds\"},\"dataType\":\"integer\",\"description\":\"The animal weight when slaughtered.\",\"isNullable\":true,\"name\":\"WeightAtSlaughterPounds\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CalvingIntervalDays\"},\"dataType\":\"integer\",\"description\":\"Period between one calving and the next, usually 375 days.\",\"isNullable\":true,\"name\":\"CalvingIntervalDays\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"GestationPeriodDays\"},\"dataType\":\"integer\",\"description\":\"Period from conception to parturition, average 283 days.\",\"isNullable\":true,\"name\":\"GestationPeriodDays\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"PedigreeAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"Pedigree [Livestock General]\\nPure bred animal registered with the breed society.\",\"isNullable\":true,\"name\":\"PedigreeAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CrossBreedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"Cross-breed is an animal that is a product of crossing two or more breeds. This is done to get the best facets of several breeds into one animal.\",\"isNullable\":true,\"name\":\"CrossBreedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CertifiedGrainfedIndicator\"},\"dataType\":\"boolean\",\"description\":\"Certified grainfed: Cattle sold with a statutory declaration to verify 70 days minimum at a registered feedlot.\",\"isNullable\":true,\"name\":\"CertifiedGrainfedIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"GrassFedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"An animal which has been fed on pasture (grass). Also used to describe the carcass when it is being sold.\",\"isNullable\":true,\"name\":\"GrassFedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"LongfedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"An animal that is grainfed, in a feedlot, for an extended period of time. Usually refers to cattle that are fed for over 200 days (up to 550 days) for the top Japanese markets. (See 'shortfed' and 'medium fed').\",\"isNullable\":true,\"name\":\"LongfedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"LotfedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"An animal that is fed in a feedlot.\",\"isNullable\":true,\"name\":\"LotfedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"PastureFedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"An animal that is grazed in a pasture.\",\"isNullable\":true,\"name\":\"PastureFedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CarcassQualityGradeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a carcass quality grade.\",\"isNullable\":true,\"name\":\"CarcassQualityGradeId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MeatQualityGradeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a meat quality grade.\",\"isNullable\":true,\"name\":\"MeatQualityGradeId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"UsdaYieldGradeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a USDA Yield Grade.\",\"isNullable\":true,\"name\":\"UsdaYieldGradeId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"EstimatedBreedingValueId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of an estimated breeding value.\",\"isNullable\":true,\"name\":\"EstimatedBreedingValueId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MuscleScoreId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a muscle score.\",\"isNullable\":true,\"name\":\"MuscleScoreId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"BodyConditionScoreId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a body condition score.\",\"isNullable\":true,\"name\":\"BodyConditionScoreId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalFrameSizeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of an animal frame size.\",\"isNullable\":true,\"name\":\"AnimalFrameSizeId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"RfidTagId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a RFID Tag.\\n\\nThe transmitter/receiver pair or transceiver plus the information storage mechanism attached to the object is referred to as the tag, transponder, electronic label, code plate and various other terms. \\n\\nAlthough transponder is technically the most accurate, the most common term and the one preferred by the Automatic Identification Manufacturers is tag.\",\"isNullable\":true,\"name\":\"RfidTagId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CattleTypeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a cattle type.\",\"isNullable\":true,\"name\":\"CattleTypeId\"}]}}}",
 								"Description": "Livestock - domestic farm animals kept for productive purposes (meat, milk, work, wool)",
 								"DisplayFolderInfo": "{\"name\":\"Animal\",\"colorCode\":\"#00188F\"}",
 								"PrimaryKeys": "AnimalId",
-								"spark.sql.sources.provider": "csv"
+								"spark.sql.sources.provider": "csv",
+								"spark.sql.sources.schema.numParts": "1",
+								"spark.sql.sources.schema.part.0": "{\"type\":\"struct\",\"fields\":[{\"name\":\"AnimalId\",\"type\":\"integer\",\"nullable\":false,\"metadata\":{}},{\"name\":\"AnimalName\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalDescription\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalDataOfBirth\",\"type\":\"date\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalDateOfDeath\",\"type\":\"date\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalDateOfSlaughter\",\"type\":\"date\",\"nullable\":true,\"metadata\":{}},{\"name\":\"MarketAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CattleBreedId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"WeightAtBirthPounds\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"WeightAtSlaughterPounds\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CalvingIntervalDays\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"GestationPeriodDays\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PedigreeAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CrossBreedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CertifiedGrainfedIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"GrassFedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"LongfedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"LotfedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PastureFedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CarcassQualityGradeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"MeatQualityGradeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"UsdaYieldGradeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"EstimatedBreedingValueId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"MuscleScoreId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"BodyConditionScoreId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalFrameSizeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"RfidTagId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CattleTypeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}]}"
 							},
-							"Retention": 0,
-							"Temporary": false,
-							"IsRewriteEnabled": false
+							"ObjectVersion": 1,
+							"ObjectId": "0cbde6b8-475b-4894-aaf3-165515299ddd",
+							"Description": "Livestock - domestic farm animals kept for productive purposes (meat, milk, work, wool)"
 						},
 						"Source": {
 							"Type": "SPARK"
@@ -882,13 +1763,6 @@
 					}
 				]
 			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/default')]",
-			"type": "Microsoft.Synapse/workspaces/managedVirtualNetworks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {},
 			"dependsOn": []
 		},
 		{
@@ -932,6 +1806,162 @@
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/managedVirtualNetworks/default')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/synapse_db')]",
+			"type": "Microsoft.Synapse/workspaces/databases",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"Ddls": [
+					{
+						"ActionType": "CREATE",
+						"OldEntity": null,
+						"NewEntity": {
+							"Name": "synapse_db",
+							"EntityType": "DATABASE",
+							"Origin": {
+								"Type": "SPARK"
+							},
+							"Properties": {
+								"IsSyMSCDMDatabase": true
+							},
+							"Source": {
+								"Provider": "ADLS",
+								"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_db",
+								"Properties": {
+									"FormatType": "csv",
+									"LinkedServiceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage"
+								}
+							}
+						},
+						"Source": {
+							"Type": "SPARK"
+						}
+					},
+					{
+						"ActionType": "CREATE",
+						"OldEntity": null,
+						"NewEntity": {
+							"Name": "synapses",
+							"EntityType": "TABLE",
+							"Namespace": {
+								"DatabaseName": "synapse_db"
+							},
+							"Description": "",
+							"TableType": "EXTERNAL",
+							"Origin": {
+								"Type": "SPARK"
+							},
+							"StorageDescriptor": {
+								"Columns": [
+									{
+										"Name": "synapse_name",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsNullable": false,
+											"IsComplexType": false,
+											"Length": 256,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "synapse_project",
+										"Description": "",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsNullable": true,
+											"IsComplexType": false,
+											"Length": 256,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "synapse_owner",
+										"Description": "",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsNullable": true,
+											"IsComplexType": false,
+											"Length": 256,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "synapse_environment",
+										"Description": "",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsNullable": false,
+											"IsComplexType": false,
+											"Length": 256,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									}
+								],
+								"Format": {
+									"InputFormat": "org.apache.hadoop.mapred.SequenceFileInputFormat",
+									"OutputFormat": "org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat",
+									"FormatType": "csv",
+									"SerializeLib": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
+									"Properties": {
+										"path": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_db/synapses",
+										"delimiter": ",",
+										"multiLine": "false",
+										"firstRowAsHeader": "false",
+										"serialization.format": "1",
+										"escape": "\\",
+										"quote": "\"",
+										"FormatTypeSetToDatabaseDefault": true,
+										"header": "false"
+									}
+								},
+								"Source": {
+									"Provider": "ADLS",
+									"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_db/synapses",
+									"Properties": {
+										"LinkedServiceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage",
+										"LocationSetToDatabaseDefault": true
+									}
+								},
+								"Properties": {
+									"textinputformat.record.delimiter": ",",
+									"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
+									"derivedModelAttributeInfo": "{\"attributeReferences\":{}}"
+								},
+								"Compressed": false,
+								"IsStoredAsSubdirectories": false
+							},
+							"Properties": {
+								"Description": "",
+								"DisplayFolderInfo": "{\"name\":\"Others\",\"colorCode\":\"\"}",
+								"PrimaryKeys": "",
+								"spark.sql.sources.provider": "csv",
+								"sql:IsAppendOnly": false
+							},
+							"Retention": 0,
+							"Temporary": false,
+							"IsRewriteEnabled": false,
+							"Partitioning": {}
+						},
+						"Source": {
+							"Type": "SPARK"
+						}
+					}
+				]
+			},
+			"dependsOn": []
 		}
 	]
 }

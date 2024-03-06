@@ -35,7 +35,14 @@
 				"     databaseType: 'spark',",
 				"     format: 'table',",
 				"     database: 'synapse_db',",
-				"     tableName: 'synapses') ~> sink1"
+				"     tableName: 'synapses',",
+				"     recreate:true,",
+				"     mapColumn(",
+				"          Id,",
+				"          Name,",
+				"          RG,",
+				"          Tags",
+				"     )) ~> sink1"
 			]
 		}
 	}

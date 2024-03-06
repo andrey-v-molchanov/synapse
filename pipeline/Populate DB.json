@@ -1,5 +1,5 @@
 {
-	"name": "Pipeline 1",
+	"name": "Populate DB",
 	"properties": {
 		"description": "Description !!",
 		"activities": [
@@ -17,7 +17,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"dataflow": {
-						"referenceName": "Dataflow1",
+						"referenceName": "JSON_2_DB",
 						"type": "DataFlowReference"
 					},
 					"compute": {

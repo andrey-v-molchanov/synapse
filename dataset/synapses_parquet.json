@@ -1,0 +1,21 @@
+{
+	"name": "synapses_parquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "DataLake_DEV_LS",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "synapses.parquet",
+				"folderPath": "parquet",
+				"fileSystem": "dev-synapse-fs"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}

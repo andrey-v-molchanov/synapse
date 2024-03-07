@@ -4,8 +4,8 @@
 		"description": "Description !!",
 		"activities": [
 			{
-				"name": "Populate Flow",
-				"type": "ExecuteDataFlow",
+				"name": "CSVtoParquet",
+				"type": "Copy",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
@@ -16,16 +16,158 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"dataflow": {
-						"referenceName": "JSON_2_DB",
-						"type": "DataFlowReference"
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
 					},
-					"compute": {
-						"coreCount": 8,
-						"computeType": "General"
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
 					},
-					"traceLevel": "Fine"
-				}
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "$['Id']"
+								},
+								"sink": {
+									"name": "Id"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Name']"
+								},
+								"sink": {
+									"name": "Name"
+								}
+							},
+							{
+								"source": {
+									"path": "$['RG']"
+								},
+								"sink": {
+									"name": "RG"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['ApplicationId']"
+								},
+								"sink": {
+									"name": "ApplicationId"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['ProjectName']"
+								},
+								"sink": {
+									"name": "ProjectName"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['Application_Management_Group']"
+								},
+								"sink": {
+									"name": "Application_Management_Group"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['DataRetention']"
+								},
+								"sink": {
+									"name": "DataRetention"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['DeployDate']"
+								},
+								"sink": {
+									"name": "DeployDate",
+									"type": "Date"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['Support_Group']"
+								},
+								"sink": {
+									"name": "Support_Group"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['Environment']"
+								},
+								"sink": {
+									"name": "Environment"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['ProjectOwner']"
+								},
+								"sink": {
+									"name": "ProjectOwner"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['TicketNo']"
+								},
+								"sink": {
+									"name": "TicketNo"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['VM']"
+								},
+								"sink": {
+									"name": "VM"
+								}
+							},
+							{
+								"source": {
+									"path": "$['Tags']['DeployBy']"
+								},
+								"sink": {
+									"name": "DeployBy"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "synapses_dev",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "synapses_parquet",
+						"type": "DatasetReference"
+					}
+				]
 			}
 		],
 		"variables": {

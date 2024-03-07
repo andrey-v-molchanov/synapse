@@ -1,0 +1,22 @@
+{
+	"name": "synapse_db",
+	"properties": {
+		"Name": "synapse_db",
+		"EntityType": "DATABASE",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"Properties": {
+			"IsSyMSCDMDatabase": true
+		},
+		"Source": {
+			"Provider": "ADLS",
+			"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_db",
+			"Properties": {
+				"FormatType": "parquet",
+				"LinkedServiceName": "DataLake_DEV_LS"
+			}
+		}
+	},
+	"type": "DATABASE"
+}

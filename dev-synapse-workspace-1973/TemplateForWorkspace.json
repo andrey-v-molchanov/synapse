@@ -12,6 +12,10 @@
 			"metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase1'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=dev-synapse-workspace-1973.database.windows.net;Initial Catalog=master"
 		},
+		"DataLake_DEV_LS_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'DataLake_DEV_LS'"
+		},
 		"Test_data_lake_accountKey": {
 			"type": "secureString",
 			"metadata": "Secure string for 'accountKey' of 'Test_data_lake'"
@@ -20,6 +24,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'dev-synapse-workspace-1973-WorkspaceDefaultSqlServer'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:dev-synapse-workspace-1973.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"DataLake_DEV_LS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://devsynapsedl2.dfs.core.windows.net/"
 		},
 		"Test_data_lake_properties_typeProperties_url": {
 			"type": "string",
@@ -35,15 +43,15 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('workspaceName'), '/Pipeline 1')]",
+			"name": "[concat(parameters('workspaceName'), '/Populate DB')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
 				"description": "Description !!",
 				"activities": [
 					{
-						"name": "Data flow1",
-						"type": "ExecuteDataFlow",
+						"name": "CSVtoParquet",
+						"type": "Copy",
 						"dependsOn": [],
 						"policy": {
 							"timeout": "0.12:00:00",
@@ -54,22 +62,172 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"dataflow": {
-								"referenceName": "Dataflow1",
-								"type": "DataFlowReference",
-								"parameters": {},
-								"datasetParameters": {
-									"source1": {},
-									"sink1": {}
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
 								}
 							},
-							"staging": {},
-							"compute": {
-								"coreCount": 8,
-								"computeType": "General"
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
 							},
-							"traceLevel": "Fine"
-						}
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['Id']"
+										},
+										"sink": {
+											"name": "Id",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Name']"
+										},
+										"sink": {
+											"name": "Name",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['RG']"
+										},
+										"sink": {
+											"name": "RG",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['ApplicationId']"
+										},
+										"sink": {
+											"name": "ApplicationId",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['ProjectName']"
+										},
+										"sink": {
+											"name": "ProjectName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['Application_Management_Group']"
+										},
+										"sink": {
+											"name": "Application_Management_Group"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['DataRetention']"
+										},
+										"sink": {
+											"name": "DataRetention",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['DeployDate']"
+										},
+										"sink": {
+											"name": "DeployDate",
+											"type": "Date"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['Support_Group']"
+										},
+										"sink": {
+											"name": "Support_Group",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['Environment']"
+										},
+										"sink": {
+											"name": "Environment",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['ProjectOwner']"
+										},
+										"sink": {
+											"name": "ProjectOwner",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['TicketNo']"
+										},
+										"sink": {
+											"name": "TicketNo",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['VM']"
+										},
+										"sink": {
+											"name": "VM",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['Tags']['DeployBy']"
+										},
+										"sink": {
+											"name": "DeployBy",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "synapses_dev",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "synapses_parquet",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
 					}
 				],
 				"policy": {
@@ -87,7 +245,8 @@
 				"lastPublishTime": "2023-07-06T12:49:22Z"
 			},
 			"dependsOn": [
-				"[concat(variables('workspaceId'), '/dataflows/Dataflow1')]"
+				"[concat(variables('workspaceId'), '/datasets/synapses_dev')]",
+				"[concat(variables('workspaceId'), '/datasets/synapses_parquet')]"
 			]
 		},
 		{
@@ -96,23 +255,127 @@
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage",
+					"referenceName": "DataLake_DEV_LS",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
 				"type": "DelimitedText",
 				"typeProperties": {
 					"location": {
-						"type": "AzureBlobFSLocation"
+						"type": "AzureBlobFSLocation",
+						"fileName": "Synapse.dev.out.txt",
+						"fileSystem": "dev-synapse-fs"
 					},
 					"columnDelimiter": ",",
 					"escapeChar": "\\",
+					"firstRowAsHeader": true,
 					"quoteChar": "\""
 				},
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('workspaceId'), '/linkedServices/dev-synapse-workspace-1973-WorkspaceDefaultStorage')]"
+				"[concat(variables('workspaceId'), '/linkedServices/DataLake_DEV_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/synapses_dev')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "DataLake_DEV_LS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "Synapse.dev.json",
+						"fileSystem": "dev-synapse-fs"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"Id": {
+							"type": "string"
+						},
+						"Name": {
+							"type": "string"
+						},
+						"RG": {
+							"type": "string"
+						},
+						"Tags": {
+							"type": "object",
+							"properties": {
+								"ApplicationId": {
+									"type": "string"
+								},
+								"ProjectName": {
+									"type": "string"
+								},
+								"Application_Management_Group": {
+									"type": "string"
+								},
+								"DataRetention": {
+									"type": "string"
+								},
+								"DeployDate": {
+									"type": "string"
+								},
+								"Support_Group": {
+									"type": "string"
+								},
+								"Environment": {
+									"type": "string"
+								},
+								"ProjectOwner": {
+									"type": "string"
+								},
+								"TicketNo": {
+									"type": "string"
+								},
+								"VM": {
+									"type": "string"
+								},
+								"DeployBy": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/DataLake_DEV_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/synapses_parquet')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "DataLake_DEV_LS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "synapses.parquet",
+						"folderPath": "parquet",
+						"fileSystem": "dev-synapse-fs"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/DataLake_DEV_LS')]"
 			]
 		},
 		{
@@ -124,6 +387,29 @@
 				"type": "AzureSqlDatabase",
 				"typeProperties": {
 					"connectionString": "[parameters('AzureSqlDatabase1_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DataLake_DEV_LS')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('DataLake_DEV_LS_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('DataLake_DEV_LS_accountKey')]"
+					}
 				},
 				"connectVia": {
 					"referenceName": "AutoResolveIntegrationRuntime",
@@ -267,6 +553,60 @@
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/datasets/DelimitedText1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/JSON_2_DB')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "synapses_dev",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"name": "sink1"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          Id as string,",
+						"          Name as string,",
+						"          RG as string,",
+						"          Tags as (ApplicationId as string, ProjectName as string, Application_Management_Group as string, DataRetention as string, DeployDate as string, Support_Group as string, Environment as string, ProjectOwner as string, TicketNo as string, VM as string, DeployBy as string)",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     documentForm: 'singleDocument') ~> source1",
+						"source1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     store: 'synapse',",
+						"     databaseType: 'spark',",
+						"     format: 'table',",
+						"     database: 'synapse_db',",
+						"     tableName: 'synapses',",
+						"     recreate:true,",
+						"     mapColumn(",
+						"          Id,",
+						"          Name,",
+						"          RG,",
+						"          Tags",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/synapses_dev')]"
 			]
 		},
 		{
@@ -1110,7 +1450,7 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/Database1')]",
+			"name": "[concat(parameters('workspaceName'), '/synapse_db')]",
 			"type": "Microsoft.Synapse/workspaces/databases",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -1119,26 +1459,22 @@
 						"ActionType": "CREATE",
 						"OldEntity": null,
 						"NewEntity": {
-							"Name": "Database1",
+							"Name": "synapse_db",
 							"EntityType": "DATABASE",
 							"Origin": {
 								"Type": "SPARK"
 							},
 							"Properties": {
-								"IsSyMSCDMDatabase": true,
-								"DerivedModelDBInfo": "{\"ModelDirectives\":{\"BaseModel\":{\"Name\":\"Agriculture\",\"Version\":\"0.1.0\"}}}"
+								"IsSyMSCDMDatabase": true
 							},
 							"Source": {
 								"Provider": "ADLS",
-								"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/Database1",
+								"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_db",
 								"Properties": {
-									"FormatType": "csv",
-									"LinkedServiceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage"
+									"FormatType": "parquet",
+									"LinkedServiceName": "DataLake_DEV_LS"
 								}
-							},
-							"PublishStatus": "PUBLISHED",
-							"ObjectVersion": 1,
-							"ObjectId": "1bca3f74-b72d-4fd3-8678-a7751ae26b85"
+							}
 						},
 						"Source": {
 							"Type": "SPARK"
@@ -1148,614 +1484,375 @@
 						"ActionType": "CREATE",
 						"OldEntity": null,
 						"NewEntity": {
-							"Name": "Animal",
+							"Name": "synapse_dev",
 							"EntityType": "TABLE",
-							"TableType": "EXTERNAL",
 							"Namespace": {
-								"SchemaName": null,
-								"DatabaseName": "Database1",
-								"DatabaseId": null
+								"DatabaseName": "synapse_db"
+							},
+							"Description": "",
+							"TableType": "EXTERNAL",
+							"Origin": {
+								"Type": "SPARK"
 							},
 							"StorageDescriptor": {
-								"Distribution": null,
 								"Columns": [
 									{
-										"Name": "AnimalId",
-										"Description": "The unique identifier of an animal.",
+										"Name": "Id",
 										"OriginDataTypeName": {
-											"TypeName": "integer",
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "Name",
+										"OriginDataTypeName": {
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": false,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "AnimalId"
-										}
-									},
-									{
-										"Name": "AnimalName",
-										"Description": "The name of the animal.",
-										"OriginDataTypeName": {
-											"TypeName": "string",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 128,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
 												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "AnimalName"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "AnimalDescription",
-										"Description": "The description of the animal.",
+										"Name": "RG",
 										"OriginDataTypeName": {
 											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 512,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
 												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "AnimalDescription"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "AnimalDataOfBirth",
-										"Description": "The date of birth of the animal.",
+										"Name": "ApplicationId",
 										"OriginDataTypeName": {
-											"TypeName": "date",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"DateFormat": "YYYY-MM-DD",
-												"HIVE_TYPE_STRING": "date"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "AnimalDataOfBirth"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "AnimalDateOfDeath",
-										"Description": "The date that the animal died.",
+										"Name": "ProjectName",
 										"OriginDataTypeName": {
-											"TypeName": "date",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"DateFormat": "YYYY-MM-DD",
-												"HIVE_TYPE_STRING": "date"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "AnimalDateOfDeath"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "AnimalDateOfSlaughter",
-										"Description": "The date that the animal was slaughtered.",
+										"Name": "Application_Management_Group",
 										"OriginDataTypeName": {
-											"TypeName": "date",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"DateFormat": "YYYY-MM-DD",
-												"HIVE_TYPE_STRING": "date"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "AnimalDateOfSlaughter"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "MarketAnimalIndicator",
-										"Description": "Livestock bred and raised for food consumption",
+										"Name": "DataRetention",
 										"OriginDataTypeName": {
-											"TypeName": "boolean",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"HIVE_TYPE_STRING": "boolean"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "MarketAnimalIndicator"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "CattleBreedId",
-										"Description": "The unique identifier of a cattle breed.",
+										"Name": "DeployDate",
 										"OriginDataTypeName": {
-											"TypeName": "integer",
+											"TypeName": "timestamp",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
 											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
+												"TimestampFormat": "YYYY-MM-DD HH:MM:SS.fffffffff",
+												"HIVE_TYPE_STRING": "timestamp"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "CattleBreedId"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "WeightAtBirthPounds",
-										"Description": "The weight of the animal at birth.",
+										"Name": "Support_Group",
 										"OriginDataTypeName": {
-											"TypeName": "integer",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "WeightAtBirthPounds"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "WeightAtSlaughterPounds",
-										"Description": "The animal weight when slaughtered.",
+										"Name": "Environment",
 										"OriginDataTypeName": {
-											"TypeName": "integer",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "WeightAtSlaughterPounds"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "CalvingIntervalDays",
-										"Description": "Period between one calving and the next, usually 375 days.",
+										"Name": "ProjectOwner",
 										"OriginDataTypeName": {
-											"TypeName": "integer",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "CalvingIntervalDays"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "GestationPeriodDays",
-										"Description": "Period from conception to parturition, average 283 days.",
+										"Name": "TicketNo",
 										"OriginDataTypeName": {
-											"TypeName": "integer",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "GestationPeriodDays"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "PedigreeAnimalIndicator",
-										"Description": "Pedigree [Livestock General]\nPure bred animal registered with the breed society.",
+										"Name": "VM",
 										"OriginDataTypeName": {
-											"TypeName": "boolean",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"HIVE_TYPE_STRING": "boolean"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "PedigreeAnimalIndicator"
-										}
+										"DeltaFormatInvalidMessages": []
 									},
 									{
-										"Name": "CrossBreedAnimalIndicator",
-										"Description": "Cross-breed is an animal that is a product of crossing two or more breeds. This is done to get the best facets of several breeds into one animal.",
+										"Name": "DeployBy",
 										"OriginDataTypeName": {
-											"TypeName": "boolean",
+											"TypeName": "string",
 											"IsComplexType": false,
 											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
+											"Length": 8000,
 											"Properties": {
-												"HIVE_TYPE_STRING": "boolean"
+												"HIVE_TYPE_STRING": "string"
 											}
 										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "CrossBreedAnimalIndicator"
-										}
-									},
-									{
-										"Name": "CertifiedGrainfedIndicator",
-										"Description": "Certified grainfed: Cattle sold with a statutory declaration to verify 70 days minimum at a registered feedlot.",
-										"OriginDataTypeName": {
-											"TypeName": "boolean",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "boolean"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "CertifiedGrainfedIndicator"
-										}
-									},
-									{
-										"Name": "GrassFedAnimalIndicator",
-										"Description": "An animal which has been fed on pasture (grass). Also used to describe the carcass when it is being sold.",
-										"OriginDataTypeName": {
-											"TypeName": "boolean",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "boolean"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "GrassFedAnimalIndicator"
-										}
-									},
-									{
-										"Name": "LongfedAnimalIndicator",
-										"Description": "An animal that is grainfed, in a feedlot, for an extended period of time. Usually refers to cattle that are fed for over 200 days (up to 550 days) for the top Japanese markets. (See 'shortfed' and 'medium fed').",
-										"OriginDataTypeName": {
-											"TypeName": "boolean",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "boolean"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "LongfedAnimalIndicator"
-										}
-									},
-									{
-										"Name": "LotfedAnimalIndicator",
-										"Description": "An animal that is fed in a feedlot.",
-										"OriginDataTypeName": {
-											"TypeName": "boolean",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "boolean"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "LotfedAnimalIndicator"
-										}
-									},
-									{
-										"Name": "PastureFedAnimalIndicator",
-										"Description": "An animal that is grazed in a pasture.",
-										"OriginDataTypeName": {
-											"TypeName": "boolean",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "boolean"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "PastureFedAnimalIndicator"
-										}
-									},
-									{
-										"Name": "CarcassQualityGradeId",
-										"Description": "The unique identifier of a carcass quality grade.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "CarcassQualityGradeId"
-										}
-									},
-									{
-										"Name": "MeatQualityGradeId",
-										"Description": "The unique identifier of a meat quality grade.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "MeatQualityGradeId"
-										}
-									},
-									{
-										"Name": "UsdaYieldGradeId",
-										"Description": "The unique identifier of a USDA Yield Grade.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "UsdaYieldGradeId"
-										}
-									},
-									{
-										"Name": "EstimatedBreedingValueId",
-										"Description": "The unique identifier of an estimated breeding value.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "EstimatedBreedingValueId"
-										}
-									},
-									{
-										"Name": "MuscleScoreId",
-										"Description": "The unique identifier of a muscle score.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "MuscleScoreId"
-										}
-									},
-									{
-										"Name": "BodyConditionScoreId",
-										"Description": "The unique identifier of a body condition score.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "BodyConditionScoreId"
-										}
-									},
-									{
-										"Name": "AnimalFrameSizeId",
-										"Description": "The unique identifier of an animal frame size.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "AnimalFrameSizeId"
-										}
-									},
-									{
-										"Name": "RfidTagId",
-										"Description": "The unique identifier of a RFID Tag.\n\nThe transmitter/receiver pair or transceiver plus the information storage mechanism attached to the object is referred to as the tag, transponder, electronic label, code plate and various other terms. \n\nAlthough transponder is technically the most accurate, the most common term and the one preferred by the Automatic Identification Manufacturers is tag.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "RfidTagId"
-										}
-									},
-									{
-										"Name": "CattleTypeId",
-										"Description": "The unique identifier of a cattle type.",
-										"OriginDataTypeName": {
-											"TypeName": "integer",
-											"IsComplexType": false,
-											"IsNullable": true,
-											"Length": 0,
-											"Precision": 0,
-											"Scale": 0,
-											"Properties": {
-												"HIVE_TYPE_STRING": "integer"
-											}
-										},
-										"BaseAttributeReference": {
-											"Entity": "Animal.cdm.json/Animal",
-											"Name": "CattleTypeId"
-										}
+										"DeltaFormatInvalidMessages": []
 									}
 								],
-								"ColumnSetEntityName": "54d14c36-71c2-403f-92cf-7d2c1dfe375d",
+								"Format": {
+									"InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+									"OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+									"FormatType": "parquet",
+									"SerializeLib": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+									"Properties": {
+										"path": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/parquet/synapses.parquet",
+										"FormatTypeSetToDatabaseDefault": false
+									}
+								},
+								"Source": {
+									"Provider": "ADLS",
+									"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/parquet/synapses.parquet",
+									"Properties": {
+										"LinkedServiceName": "DataLake_DEV_LS",
+										"LocationSetToDatabaseDefault": false
+									}
+								},
+								"Properties": {
+									"textinputformat.record.delimiter": ",",
+									"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
+									"derivedModelAttributeInfo": "{\"attributeReferences\":{}}"
+								},
+								"Compressed": false,
+								"IsStoredAsSubdirectories": false
+							},
+							"Properties": {
+								"Description": "",
+								"DisplayFolderInfo": "{\"name\":\"Others\",\"colorCode\":\"\"}",
+								"PrimaryKeys": "",
+								"spark.sql.sources.provider": "parquet"
+							},
+							"Retention": 0,
+							"Temporary": false,
+							"IsRewriteEnabled": false
+						},
+						"Source": {
+							"Type": "SPARK"
+						}
+					},
+					{
+						"ActionType": "CREATE",
+						"OldEntity": null,
+						"NewEntity": {
+							"Name": "synapse_dev_csv",
+							"EntityType": "TABLE",
+							"Namespace": {
+								"DatabaseName": "synapse_db"
+							},
+							"Description": "",
+							"TableType": "EXTERNAL",
+							"Origin": {
+								"Type": "SPARK"
+							},
+							"StorageDescriptor": {
+								"Columns": [
+									{
+										"Name": "C1",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "C2",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "C3",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "C4",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "C5",
+										"OriginDataTypeName": {
+											"TypeName": "long",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Properties": {
+												"HIVE_TYPE_STRING": "long"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									},
+									{
+										"Name": "C6",
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										},
+										"DeltaFormatInvalidMessages": []
+									}
+								],
 								"Format": {
 									"InputFormat": "org.apache.hadoop.mapred.SequenceFileInputFormat",
 									"OutputFormat": "org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat",
 									"FormatType": "csv",
 									"SerializeLib": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
 									"Properties": {
-										"path": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/Database1/Animal",
+										"path": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_git.csv",
 										"delimiter": ",",
-										"firstRowAsHeader": "false",
 										"multiLine": "false",
+										"firstRowAsHeader": "false",
 										"serialization.format": "1",
-										"escape": "\\",
-										"quote": "\"",
-										"FormatTypeSetToDatabaseDefault": true,
+										"FormatTypeSetToDatabaseDefault": false,
 										"header": "false"
 									}
 								},
 								"Source": {
 									"Provider": "ADLS",
-									"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/Database1/Animal",
+									"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_git.csv",
 									"Properties": {
-										"LinkedServiceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage",
-										"LocationSetToDatabaseDefault": true
+										"LinkedServiceName": "DataLake_DEV_LS",
+										"LocationSetToDatabaseDefault": false
 									}
 								},
 								"Properties": {
 									"textinputformat.record.delimiter": ",",
 									"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
-									"derivedModelAttributeInfo": "{\"attributeReferences\":{\"AnimalId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalId\"},\"AnimalName\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalName\"},\"AnimalDescription\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDescription\"},\"AnimalDataOfBirth\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDataOfBirth\"},\"AnimalDateOfDeath\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDateOfDeath\"},\"AnimalDateOfSlaughter\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDateOfSlaughter\"},\"MarketAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MarketAnimalIndicator\"},\"CattleBreedId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CattleBreedId\"},\"WeightAtBirthPounds\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"WeightAtBirthPounds\"},\"WeightAtSlaughterPounds\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"WeightAtSlaughterPounds\"},\"CalvingIntervalDays\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CalvingIntervalDays\"},\"GestationPeriodDays\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"GestationPeriodDays\"},\"PedigreeAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"PedigreeAnimalIndicator\"},\"CrossBreedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CrossBreedAnimalIndicator\"},\"CertifiedGrainfedIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CertifiedGrainfedIndicator\"},\"GrassFedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"GrassFedAnimalIndicator\"},\"LongfedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"LongfedAnimalIndicator\"},\"LotfedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"LotfedAnimalIndicator\"},\"PastureFedAnimalIndicator\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"PastureFedAnimalIndicator\"},\"CarcassQualityGradeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CarcassQualityGradeId\"},\"MeatQualityGradeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MeatQualityGradeId\"},\"UsdaYieldGradeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"UsdaYieldGradeId\"},\"EstimatedBreedingValueId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"EstimatedBreedingValueId\"},\"MuscleScoreId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MuscleScoreId\"},\"BodyConditionScoreId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"BodyConditionScoreId\"},\"AnimalFrameSizeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalFrameSizeId\"},\"RfidTagId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"RfidTagId\"},\"CattleTypeId\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CattleTypeId\"}}}"
+									"derivedModelAttributeInfo": "{\"attributeReferences\":{}}"
 								},
 								"Compressed": false,
-								"SerDeInfo": null,
 								"IsStoredAsSubdirectories": false
 							},
-							"Owner": null,
-							"CreateTime": 0,
-							"LastAccessTime": 0,
+							"Properties": {
+								"Description": "",
+								"DisplayFolderInfo": "{\"name\":\"Others\",\"colorCode\":\"\"}",
+								"PrimaryKeys": "",
+								"spark.sql.sources.provider": "csv"
+							},
 							"Retention": 0,
 							"Temporary": false,
-							"IsRewriteEnabled": false,
-							"ViewOriginalText": null,
-							"ViewExpandedText": null,
-							"Origin": {
-								"Type": "SPARK"
-							},
-							"OriginObjectId": null,
-							"IsSharedEntity": false,
-							"PublishStatus": "PUBLISHED",
-							"Properties": {
-								"DerivedModelEntityInfo": "{\"entityDirectives\":{\"baseEntityReference\":{\"name\":\"Animal\",\"path\":\"Animal.cdm.json/Animal\"},\"description\":\"Livestock - domestic farm animals kept for productive purposes (meat, milk, work, wool)\",\"primaryKey\":[\"AnimalId\"],\"projectionInfo\":{\"attributes\":[{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of an animal.\",\"isNullable\":false,\"name\":\"AnimalId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalName\"},\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The name of the animal.\",\"isNullable\":true,\"name\":\"AnimalName\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDescription\"},\"dataType\":\"string\",\"dataTypeLength\":512,\"description\":\"The description of the animal.\",\"isNullable\":true,\"name\":\"AnimalDescription\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDataOfBirth\"},\"dataType\":\"date\",\"dateFormat\":\"YYYY-MM-DD\",\"description\":\"The date of birth of the animal.\",\"isNullable\":true,\"name\":\"AnimalDataOfBirth\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDateOfDeath\"},\"dataType\":\"date\",\"dateFormat\":\"YYYY-MM-DD\",\"description\":\"The date that the animal died.\",\"isNullable\":true,\"name\":\"AnimalDateOfDeath\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalDateOfSlaughter\"},\"dataType\":\"date\",\"dateFormat\":\"YYYY-MM-DD\",\"description\":\"The date that the animal was slaughtered.\",\"isNullable\":true,\"name\":\"AnimalDateOfSlaughter\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MarketAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"Livestock bred and raised for food consumption\",\"isNullable\":true,\"name\":\"MarketAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CattleBreedId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a cattle breed.\",\"isNullable\":true,\"name\":\"CattleBreedId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"WeightAtBirthPounds\"},\"dataType\":\"integer\",\"description\":\"The weight of the animal at birth.\",\"isNullable\":true,\"name\":\"WeightAtBirthPounds\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"WeightAtSlaughterPounds\"},\"dataType\":\"integer\",\"description\":\"The animal weight when slaughtered.\",\"isNullable\":true,\"name\":\"WeightAtSlaughterPounds\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CalvingIntervalDays\"},\"dataType\":\"integer\",\"description\":\"Period between one calving and the next, usually 375 days.\",\"isNullable\":true,\"name\":\"CalvingIntervalDays\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"GestationPeriodDays\"},\"dataType\":\"integer\",\"description\":\"Period from conception to parturition, average 283 days.\",\"isNullable\":true,\"name\":\"GestationPeriodDays\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"PedigreeAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"Pedigree [Livestock General]\\nPure bred animal registered with the breed society.\",\"isNullable\":true,\"name\":\"PedigreeAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CrossBreedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"Cross-breed is an animal that is a product of crossing two or more breeds. This is done to get the best facets of several breeds into one animal.\",\"isNullable\":true,\"name\":\"CrossBreedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CertifiedGrainfedIndicator\"},\"dataType\":\"boolean\",\"description\":\"Certified grainfed: Cattle sold with a statutory declaration to verify 70 days minimum at a registered feedlot.\",\"isNullable\":true,\"name\":\"CertifiedGrainfedIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"GrassFedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"An animal which has been fed on pasture (grass). Also used to describe the carcass when it is being sold.\",\"isNullable\":true,\"name\":\"GrassFedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"LongfedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"An animal that is grainfed, in a feedlot, for an extended period of time. Usually refers to cattle that are fed for over 200 days (up to 550 days) for the top Japanese markets. (See 'shortfed' and 'medium fed').\",\"isNullable\":true,\"name\":\"LongfedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"LotfedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"An animal that is fed in a feedlot.\",\"isNullable\":true,\"name\":\"LotfedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"PastureFedAnimalIndicator\"},\"dataType\":\"boolean\",\"description\":\"An animal that is grazed in a pasture.\",\"isNullable\":true,\"name\":\"PastureFedAnimalIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CarcassQualityGradeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a carcass quality grade.\",\"isNullable\":true,\"name\":\"CarcassQualityGradeId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MeatQualityGradeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a meat quality grade.\",\"isNullable\":true,\"name\":\"MeatQualityGradeId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"UsdaYieldGradeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a USDA Yield Grade.\",\"isNullable\":true,\"name\":\"UsdaYieldGradeId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"EstimatedBreedingValueId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of an estimated breeding value.\",\"isNullable\":true,\"name\":\"EstimatedBreedingValueId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"MuscleScoreId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a muscle score.\",\"isNullable\":true,\"name\":\"MuscleScoreId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"BodyConditionScoreId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a body condition score.\",\"isNullable\":true,\"name\":\"BodyConditionScoreId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"AnimalFrameSizeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of an animal frame size.\",\"isNullable\":true,\"name\":\"AnimalFrameSizeId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"RfidTagId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a RFID Tag.\\n\\nThe transmitter/receiver pair or transceiver plus the information storage mechanism attached to the object is referred to as the tag, transponder, electronic label, code plate and various other terms. \\n\\nAlthough transponder is technically the most accurate, the most common term and the one preferred by the Automatic Identification Manufacturers is tag.\",\"isNullable\":true,\"name\":\"RfidTagId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Animal.cdm.json/Animal\",\"name\":\"CattleTypeId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a cattle type.\",\"isNullable\":true,\"name\":\"CattleTypeId\"}]}}}",
-								"Description": "Livestock - domestic farm animals kept for productive purposes (meat, milk, work, wool)",
-								"DisplayFolderInfo": "{\"name\":\"Animal\",\"colorCode\":\"#00188F\"}",
-								"PrimaryKeys": "AnimalId",
-								"spark.sql.sources.provider": "csv",
-								"spark.sql.sources.schema.numParts": "1",
-								"spark.sql.sources.schema.part.0": "{\"type\":\"struct\",\"fields\":[{\"name\":\"AnimalId\",\"type\":\"integer\",\"nullable\":false,\"metadata\":{}},{\"name\":\"AnimalName\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalDescription\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalDataOfBirth\",\"type\":\"date\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalDateOfDeath\",\"type\":\"date\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalDateOfSlaughter\",\"type\":\"date\",\"nullable\":true,\"metadata\":{}},{\"name\":\"MarketAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CattleBreedId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"WeightAtBirthPounds\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"WeightAtSlaughterPounds\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CalvingIntervalDays\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"GestationPeriodDays\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PedigreeAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CrossBreedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CertifiedGrainfedIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"GrassFedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"LongfedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"LotfedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PastureFedAnimalIndicator\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CarcassQualityGradeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"MeatQualityGradeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"UsdaYieldGradeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"EstimatedBreedingValueId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"MuscleScoreId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"BodyConditionScoreId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"AnimalFrameSizeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"RfidTagId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CattleTypeId\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}}]}"
-							},
-							"ObjectVersion": 1,
-							"ObjectId": "0cbde6b8-475b-4894-aaf3-165515299ddd",
-							"Description": "Livestock - domestic farm animals kept for productive purposes (meat, milk, work, wool)"
+							"IsRewriteEnabled": false
 						},
 						"Source": {
 							"Type": "SPARK"
@@ -1766,7 +1863,7 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/default/synapse-ws-custstgacct--dev-synapse-workspace-1973-devsynapsedl2')]",
+			"name": "[concat(parameters('workspaceName'), '/default/DataLake_DEV_PE')]",
 			"type": "Microsoft.Synapse/workspaces/managedVirtualNetworks/managedPrivateEndpoints",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -1806,162 +1903,6 @@
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/managedVirtualNetworks/default')]"
 			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/synapse_db')]",
-			"type": "Microsoft.Synapse/workspaces/databases",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"Ddls": [
-					{
-						"ActionType": "CREATE",
-						"OldEntity": null,
-						"NewEntity": {
-							"Name": "synapse_db",
-							"EntityType": "DATABASE",
-							"Origin": {
-								"Type": "SPARK"
-							},
-							"Properties": {
-								"IsSyMSCDMDatabase": true
-							},
-							"Source": {
-								"Provider": "ADLS",
-								"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_db",
-								"Properties": {
-									"FormatType": "csv",
-									"LinkedServiceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage"
-								}
-							}
-						},
-						"Source": {
-							"Type": "SPARK"
-						}
-					},
-					{
-						"ActionType": "CREATE",
-						"OldEntity": null,
-						"NewEntity": {
-							"Name": "synapses",
-							"EntityType": "TABLE",
-							"Namespace": {
-								"DatabaseName": "synapse_db"
-							},
-							"Description": "",
-							"TableType": "EXTERNAL",
-							"Origin": {
-								"Type": "SPARK"
-							},
-							"StorageDescriptor": {
-								"Columns": [
-									{
-										"Name": "synapse_name",
-										"OriginDataTypeName": {
-											"TypeName": "string",
-											"IsNullable": false,
-											"IsComplexType": false,
-											"Length": 256,
-											"Properties": {
-												"HIVE_TYPE_STRING": "string"
-											}
-										},
-										"DeltaFormatInvalidMessages": []
-									},
-									{
-										"Name": "synapse_project",
-										"Description": "",
-										"OriginDataTypeName": {
-											"TypeName": "string",
-											"IsNullable": true,
-											"IsComplexType": false,
-											"Length": 256,
-											"Properties": {
-												"HIVE_TYPE_STRING": "string"
-											}
-										},
-										"DeltaFormatInvalidMessages": []
-									},
-									{
-										"Name": "synapse_owner",
-										"Description": "",
-										"OriginDataTypeName": {
-											"TypeName": "string",
-											"IsNullable": true,
-											"IsComplexType": false,
-											"Length": 256,
-											"Properties": {
-												"HIVE_TYPE_STRING": "string"
-											}
-										},
-										"DeltaFormatInvalidMessages": []
-									},
-									{
-										"Name": "synapse_environment",
-										"Description": "",
-										"OriginDataTypeName": {
-											"TypeName": "string",
-											"IsNullable": false,
-											"IsComplexType": false,
-											"Length": 256,
-											"Properties": {
-												"HIVE_TYPE_STRING": "string"
-											}
-										},
-										"DeltaFormatInvalidMessages": []
-									}
-								],
-								"Format": {
-									"InputFormat": "org.apache.hadoop.mapred.SequenceFileInputFormat",
-									"OutputFormat": "org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat",
-									"FormatType": "csv",
-									"SerializeLib": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
-									"Properties": {
-										"path": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_db/synapses",
-										"delimiter": ",",
-										"multiLine": "false",
-										"firstRowAsHeader": "false",
-										"serialization.format": "1",
-										"escape": "\\",
-										"quote": "\"",
-										"FormatTypeSetToDatabaseDefault": true,
-										"header": "false"
-									}
-								},
-								"Source": {
-									"Provider": "ADLS",
-									"Location": "abfss://dev-synapse-fs@devsynapsedl2.dfs.core.windows.net/synapse_db/synapses",
-									"Properties": {
-										"LinkedServiceName": "dev-synapse-workspace-1973-WorkspaceDefaultStorage",
-										"LocationSetToDatabaseDefault": true
-									}
-								},
-								"Properties": {
-									"textinputformat.record.delimiter": ",",
-									"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
-									"derivedModelAttributeInfo": "{\"attributeReferences\":{}}"
-								},
-								"Compressed": false,
-								"IsStoredAsSubdirectories": false
-							},
-							"Properties": {
-								"Description": "",
-								"DisplayFolderInfo": "{\"name\":\"Others\",\"colorCode\":\"\"}",
-								"PrimaryKeys": "",
-								"spark.sql.sources.provider": "csv",
-								"sql:IsAppendOnly": false
-							},
-							"Retention": 0,
-							"Temporary": false,
-							"IsRewriteEnabled": false,
-							"Partitioning": {}
-						},
-						"Source": {
-							"Type": "SPARK"
-						}
-					}
-				]
-			},
-			"dependsOn": []
 		}
 	]
 }
